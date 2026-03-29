@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tic Tac Toe 😊 vs 😠</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 50%, #ffeaa7 100%);
+      font-family: 'Segoe UI', sans-serif;
+      user-select: none;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      color: #5a3e2b;
+      margin-bottom: 0.4rem;
+      text-align: center;
+      letter-spacing: 1px;
+    }
+
+    #turn-banner {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #fff;
+      background: #ff7043;
+      border-radius: 50px;
+      padding: 0.4em 1.2em;
+      margin-bottom: 1.2rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      transition: background 0.3s;
+      text-align: center;
+    }
+
+    #turn-banner.dad {
+      background: #5c6bc0;
+    }
+
+    #board {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      background: rgba(255,255,255,0.35);
+      border-radius: 24px;
+      padding: 20px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+    }
+
+    .cell {
+      width: 160px;
+      height: 160px;
+      background: white;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 90px;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      transition: transform 0.1s, box-shadow 0.1s, background 0.2s;
+      line-height: 1;
+    }
+
+    .cell:hover:not(.taken) {
+      transform: scale(1.06);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.18);
+      background: #fff9f0;
+    }
+
+    .cell:active:not(.taken) {
+      transform: scale(0.96);
+    }
+
+    .cell.taken {
+      cursor: default;
+    }
+
+    .cell.winner {
+      background: #fffde7;
+      box-shadow: 0 0 0 5px #ffd600, 0 6px 18px rgba(0,0,0,0.15);
+      animation: pulse 0.6s infinite alternate;
+    }
+
+    @keyframes pulse {
+      from { transform: scale(1); }
+      to   { transform: scale(1.08); }
+    }
+
+    @keyframes pop-in {
+      0%   { transform: scale(0.2); opacity: 0; }
+      70%  { transform: scale(1.2); opacity: 1; }
+      100% { transform: scale(1); }
+    }
+
+    .cell .emoji {
+      display: inline-block;
+      animation: pop-in 0.3s cubic-bezier(.36,.07,.19,.97) both;
+    }
+
+    /* Overlay */
+    #overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      z-index: 10;
+    }
+
+    #overlay.show {
+      display: flex;
+    }
+
+    #overlay-card {
+      background: white;
+      border-radius: 30px;
+      padding: 2.5rem 3.5rem;
+      text-align: center;
+      box-shadow: 0 12px 48px rgba(0,0,0,0.25);
+      animation: pop-in 0.4s cubic-bezier(.36,.07,.19,.97) both;
+    }
+
+    #overlay-emoji {
+      font-size: 110px;
+      display: block;
+      margin-bottom: 0.2em;
+      animation: bounce 0.7s infinite alternate;
+    }
+
+    @keyframes bounce {
+      from { transform: translateY(0); }
+      to   { transform: translateY(-18px); }
+    }
+
+    #overlay-message {
+      font-size: 2.4rem;
+      font-weight: bold;
+      color: #5a3e2b;
+      margin-bottom: 1rem;
+    }
+
+    #play-again {
+      font-size: 1.6rem;
+      font-weight: bold;
+      padding: 0.6em 1.8em;
+      border: none;
+      border-radius: 50px;
+      background: linear-gradient(135deg, #ff6f61, #ffd200);
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+
+    #play-again:hover {
+      transform: scale(1.07);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+    }
+
+    #play-again:active {
+      transform: scale(0.97);
+    }
+
+    /* Confetti particles */
+    .confetti {
+      position: fixed;
+      top: -20px;
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      opacity: 0;
+      animation: fall linear forwards;
+      z-index: 9;
+    }
+
+    @keyframes fall {
+      0%   { opacity: 1; transform: translateY(0) rotate(0deg); }
+      100% { opacity: 0; transform: translateY(110vh) rotate(720deg); }
+    }
+
+    /* Responsive for smaller screens */
+    @media (max-width: 580px) {
+      .cell {
+        width: 28vw;
+        height: 28vw;
+        font-size: 15vw;
+        border-radius: 14px;
+      }
+      #board { gap: 10px; padding: 14px; border-radius: 18px; }
+      h1 { font-size: 1.4rem; }
+      #turn-banner { font-size: 1.3rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>😊 Ena vs Dad 😠</h1>
+  <div id="turn-banner">😊 Ena's Turn!</div>
+
+  <div id="board">
+    <div class="cell" data-index="0"></div>
+    <div class="cell" data-index="1"></div>
+    <div class="cell" data-index="2"></div>
+    <div class="cell" data-index="3"></div>
+    <div class="cell" data-index="4"></div>
+    <div class="cell" data-index="5"></div>
+    <div class="cell" data-index="6"></div>
+    <div class="cell" data-index="7"></div>
+    <div class="cell" data-index="8"></div>
+  </div>
+
+  <div id="overlay">
+    <div id="overlay-card">
+      <span id="overlay-emoji"></span>
+      <div id="overlay-message"></div>
+      <button id="play-again">Play Again! 🎮</button>
+    </div>
+  </div>
+
+  <script>
+    const ENA = '😊';
+    const DAD = '😠';
+
+    const WIN_LINES = [
+      [0,1,2],[3,4,5],[6,7,8], // rows
+      [0,3,6],[1,4,7],[2,5,8], // cols
+      [0,4,8],[2,4,6]          // diagonals
+    ];
+
+    const CONFETTI_COLORS = ['#ff6f61','#ffd200','#6dd5ed','#a8e063','#f7971e','#c471ed','#12c2e9'];
+
+    let board = Array(9).fill(null);
+    let currentPlayer = ENA;
+    let gameOver = false;
+
+    const cells = document.querySelectorAll('.cell');
+    const banner = document.getElementById('turn-banner');
+    const overlay = document.getElementById('overlay');
+    const overlayEmoji = document.getElementById('overlay-emoji');
+    const overlayMessage = document.getElementById('overlay-message');
+    const playAgainBtn = document.getElementById('play-again');
+
+    function updateBanner() {
+      if (currentPlayer === ENA) {
+        banner.textContent = '😊 Ena\'s Turn!';
+        banner.classList.remove('dad');
+      } else {
+        banner.textContent = '😠 Dad\'s Turn!';
+        banner.classList.add('dad');
+      }
+    }
+
+    function checkWinner() {
+      for (const [a, b, c] of WIN_LINES) {
+        if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+          return { winner: board[a], line: [a, b, c] };
+        }
+      }
+      if (board.every(Boolean)) return { winner: null, draw: true };
+      return null;
+    }
+
+    function showOverlay(winner, isDraw) {
+      if (isDraw) {
+        overlayEmoji.textContent = '🤝';
+        overlayMessage.textContent = "It's a Tie!";
+      } else if (winner === ENA) {
+        overlayEmoji.textContent = '🎉';
+        overlayMessage.textContent = 'Ena Wins! 🎉';
+        spawnConfetti();
+      } else {
+        overlayEmoji.textContent = '🏆';
+        overlayMessage.textContent = 'Dad Wins! 😠';
+      }
+      overlay.classList.add('show');
+    }
+
+    function spawnConfetti() {
+      for (let i = 0; i < 60; i++) {
+        const el = document.createElement('div');
+        el.className = 'confetti';
+        el.style.left = Math.random() * 100 + 'vw';
+        el.style.background = CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)];
+        el.style.width = (8 + Math.random() * 10) + 'px';
+        el.style.height = el.style.width;
+        el.style.animationDuration = (1.5 + Math.random() * 2) + 's';
+        el.style.animationDelay = (Math.random() * 0.8) + 's';
+        document.body.appendChild(el);
+        el.addEventListener('animationend', () => el.remove());
+      }
+    }
+
+    function handleClick(e) {
+      const cell = e.currentTarget;
+      const idx = parseInt(cell.dataset.index);
+      if (gameOver || board[idx]) return;
+
+      board[idx] = currentPlayer;
+      cell.innerHTML = `<span class="emoji">${currentPlayer}</span>`;
+      cell.classList.add('taken');
+
+      const result = checkWinner();
+      if (result) {
+        gameOver = true;
+        if (result.line) {
+          result.line.forEach(i => cells[i].classList.add('winner'));
+        }
+        showOverlay(result.winner, result.draw);
+        return;
+      }
+
+      currentPlayer = currentPlayer === ENA ? DAD : ENA;
+      updateBanner();
+    }
+
+    function resetGame() {
+      board = Array(9).fill(null);
+      currentPlayer = ENA;
+      gameOver = false;
+      cells.forEach(cell => {
+        cell.innerHTML = '';
+        cell.classList.remove('taken', 'winner');
+      });
+      overlay.classList.remove('show');
+      updateBanner();
+    }
+
+    cells.forEach(cell => cell.addEventListener('click', handleClick));
+    playAgainBtn.addEventListener('click', resetGame);
+
+    updateBanner();
+  </script>
+</body>
+</html>
