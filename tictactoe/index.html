@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tic Tac Toe ❤️ vs 🔺</title>
+  <title>Tic Tac Toe ⭕ vs 🔺</title>
   <style>
     * {
       box-sizing: border-box;
@@ -207,8 +207,8 @@
 </head>
 <body>
 
-  <h1>❤️ Ena vs Dad 🔺</h1>
-  <div id="turn-banner">❤️ Ena's Turn!</div>
+  <h1>⭕ Ena vs Dad 🔺</h1>
+  <div id="turn-banner">⭕ Ena's Turn!</div>
 
   <div id="board">
     <div class="cell" data-index="0"></div>
@@ -231,7 +231,7 @@
   </div>
 
   <script>
-    const ENA = '❤️';
+    const ENA = '⭕';
     const DAD = '🔺';
 
     const WIN_LINES = [
@@ -255,7 +255,7 @@
 
     function updateBanner() {
       if (currentPlayer === ENA) {
-        banner.textContent = '❤️ Ena\'s Turn!';
+        banner.textContent = '⭕ Ena\'s Turn!';
         banner.classList.remove('dad');
       } else {
         banner.textContent = '🔺 Dad\'s Turn!';
