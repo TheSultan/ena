@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tic Tac Toe ⭕ vs 🔺</title>
+  <title>Tic Tac Toe 🔵 vs ⭕</title>
   <style>
     * {
       box-sizing: border-box;
@@ -207,8 +207,8 @@
 </head>
 <body>
 
-  <h1>⭕ Ena vs Dad 🔺</h1>
-  <div id="turn-banner">⭕ Ena's Turn!</div>
+  <h1>🔵 Ena vs Dad ⭕</h1>
+  <div id="turn-banner">🔵 Ena's Turn!</div>
 
   <div id="board">
     <div class="cell" data-index="0"></div>
@@ -231,8 +231,8 @@
   </div>
 
   <script>
-    const ENA = '⭕';
-    const DAD = '🔺';
+    const ENA = '🔵';
+    const DAD = '⭕';
 
     const WIN_LINES = [
       [0,1,2],[3,4,5],[6,7,8], // rows
@@ -255,35 +255,39 @@
 
     function updateBanner() {
       if (currentPlayer === ENA) {
-        banner.textContent = '⭕ Ena\'s Turn!';
+        banner.textContent = '🔵 Ena\'s Turn!';
         banner.classList.remove('dad');
       } else {
-        banner.textContent = '🔺 Dad\'s Turn!';
+        banner.textContent = '⭕ Dad\'s Turn!';
         banner.classList.add('dad');
       }
     }
 
-    function checkWinner() {
+    function findLine(player) {
       for (const [a, b, c] of WIN_LINES) {
-        if (board[a] && board[a] === board[b] && board[a] === board[c]) {
-          return { winner: board[a], line: [a, b, c] };
+        if (board[a] === player && board[b] === player && board[c] === player) {
+          return [a, b, c];
         }
       }
-      if (board.every(Boolean)) return { winner: null, draw: true };
       return null;
     }
 
-    function showOverlay(winner, isDraw) {
-      if (isDraw) {
-        overlayEmoji.textContent = '🤝';
-        overlayMessage.textContent = "It's a Tie!";
-      } else if (winner === ENA) {
+    function checkState() {
+      const enaLine = findLine(ENA);
+      const dadLine = findLine(DAD);
+      if (enaLine && dadLine) return { bothWin: true, enaLine, dadLine };
+      if (board.every(Boolean)) return { soClose: true, enaLine, dadLine };
+      return null;
+    }
+
+    function showOverlay(state) {
+      if (state.bothWin) {
         overlayEmoji.textContent = '🎉';
-        overlayMessage.textContent = 'Ena Wins! 🎉';
+        overlayMessage.textContent = 'You did it together!';
         spawnConfetti();
       } else {
-        overlayEmoji.textContent = '🏆';
-        overlayMessage.textContent = 'Dad Wins! 🔺';
+        overlayEmoji.textContent = '💪';
+        overlayMessage.textContent = 'So close! Try again!';
       }
       overlay.classList.add('show');
     }
@@ -312,13 +316,12 @@
       cell.innerHTML = `<span class="emoji">${currentPlayer}</span>`;
       cell.classList.add('taken');
 
-      const result = checkWinner();
-      if (result) {
+      const state = checkState();
+      if (state) {
         gameOver = true;
-        if (result.line) {
-          result.line.forEach(i => cells[i].classList.add('winner'));
-        }
-        showOverlay(result.winner, result.draw);
+        if (state.enaLine) state.enaLine.forEach(i => cells[i].classList.add('winner'));
+        if (state.dadLine) state.dadLine.forEach(i => cells[i].classList.add('winner'));
+        showOverlay(state);
         return;
       }
 
