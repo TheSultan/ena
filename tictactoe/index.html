@@ -110,12 +110,22 @@
 
     #board {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: 40px repeat(3, 1fr);
       gap: 14px;
       background: rgba(255,255,255,0.35);
       border-radius: 24px;
       padding: 20px;
       box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+    }
+
+    .board-label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      font-weight: bold;
+      color: #5a3e2b;
+      opacity: 0.6;
     }
 
     .cell {
@@ -285,12 +295,23 @@
   <div id="turn-banner">🔺 Ena's Turn!</div>
 
   <div id="board">
+    <!-- column headers -->
+    <div class="board-label"></div>
+    <div class="board-label">1</div>
+    <div class="board-label">2</div>
+    <div class="board-label">3</div>
+    <!-- row A -->
+    <div class="board-label">A</div>
     <div class="cell" data-index="0"></div>
     <div class="cell" data-index="1"></div>
     <div class="cell" data-index="2"></div>
+    <!-- row B -->
+    <div class="board-label">B</div>
     <div class="cell" data-index="3"></div>
     <div class="cell" data-index="4"></div>
     <div class="cell" data-index="5"></div>
+    <!-- row C -->
+    <div class="board-label">C</div>
     <div class="cell" data-index="6"></div>
     <div class="cell" data-index="7"></div>
     <div class="cell" data-index="8"></div>
