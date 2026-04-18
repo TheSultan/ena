@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tic Tac Toe 🔺 vs 🟦</title>
+  <title>Tic Tac Toe 🦄 vs 🌈</title>
   <style>
     * {
       box-sizing: border-box;
@@ -62,18 +62,29 @@
 
     .symbol-btn {
       font-size: 1.5rem;
-      width: 42px;
-      height: 42px;
+      width: 54px;
       border: 3px solid transparent;
       border-radius: 12px;
       background: white;
       cursor: pointer;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
+      padding: 4px 2px;
+      gap: 2px;
       transition: transform 0.1s, border-color 0.15s, opacity 0.15s;
       line-height: 1;
       box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+
+    .symbol-btn .sym-name {
+      font-size: 0.55rem;
+      font-weight: bold;
+      color: #5a3e2b;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      white-space: nowrap;
     }
 
     .symbol-btn:hover {
@@ -273,13 +284,14 @@
       #board { gap: 10px; padding: 14px; border-radius: 18px; }
       h1 { font-size: 1.4rem; }
       #turn-banner { font-size: 1.3rem; }
-      .symbol-btn { width: 36px; height: 36px; font-size: 1.2rem; }
+      .symbol-btn { width: 44px; font-size: 1.2rem; }
+      .symbol-btn .sym-name { font-size: 0.45rem; }
     }
   </style>
 </head>
 <body>
 
-  <h1 id="title">🔺 Ena vs Dad 🟦</h1>
+  <h1 id="title">🦄 Ena vs Dad 🌈</h1>
 
   <div id="picker">
     <div class="picker-row">
@@ -292,7 +304,7 @@
     </div>
   </div>
 
-  <div id="turn-banner">🔺 Ena's Turn!</div>
+  <div id="turn-banner">🦄 Ena's Turn!</div>
 
   <div id="board">
     <!-- column headers -->
@@ -326,10 +338,21 @@
   </div>
 
   <script>
-    const SYMBOLS = ['🔺', '🟦', '❤️', '⭕', '⭐', '🌙', '🐶', '🦋', '⚡', '🌸'];
+    const SYMBOLS = [
+      { emoji: '🦄', name: 'Twilight' },
+      { emoji: '🌈', name: 'Rainbow' },
+      { emoji: '🦋', name: 'Fluttershy' },
+      { emoji: '🍎', name: 'Applejack' },
+      { emoji: '💎', name: 'Rarity' },
+      { emoji: '🎉', name: 'Pinkie' },
+      { emoji: '🌙', name: 'Luna' },
+      { emoji: '⭐', name: 'Starlight' },
+      { emoji: '🌸', name: 'Cadance' },
+      { emoji: '🎀', name: 'Sweetie' },
+    ];
 
-    let enaSymbol = '🔺';
-    let dadSymbol = '🟦';
+    let enaSymbol = '🦄';
+    let dadSymbol = '🌈';
 
     const WIN_LINES = [
       [0,1,2],[3,4,5],[6,7,8], // rows
@@ -354,27 +377,27 @@
       ['ena', 'dad'].forEach(who => {
         const container = document.getElementById(`${who}-symbols`);
         container.innerHTML = '';
-        SYMBOLS.forEach(sym => {
+        SYMBOLS.forEach(({ emoji, name }) => {
           const btn = document.createElement('button');
           btn.className = 'symbol-btn';
-          btn.textContent = sym;
-          const isMine = who === 'ena' ? sym === enaSymbol : sym === dadSymbol;
-          const isOther = who === 'ena' ? sym === dadSymbol : sym === enaSymbol;
+          const isMine = who === 'ena' ? emoji === enaSymbol : emoji === dadSymbol;
+          const isOther = who === 'ena' ? emoji === dadSymbol : emoji === enaSymbol;
           if (isMine) btn.classList.add('selected');
           if (isOther) btn.classList.add('other');
-          btn.addEventListener('click', () => pickSymbol(who, sym));
+          btn.innerHTML = `<span>${emoji}</span><span class="sym-name">${name}</span>`;
+          btn.addEventListener('click', () => pickSymbol(who, emoji));
           container.appendChild(btn);
         });
       });
     }
 
-    function pickSymbol(who, sym) {
+    function pickSymbol(who, emoji) {
       if (who === 'ena') {
-        if (sym === dadSymbol) dadSymbol = enaSymbol; // swap
-        enaSymbol = sym;
+        if (emoji === dadSymbol) dadSymbol = enaSymbol; // swap
+        enaSymbol = emoji;
       } else {
-        if (sym === enaSymbol) enaSymbol = dadSymbol; // swap
-        dadSymbol = sym;
+        if (emoji === enaSymbol) enaSymbol = dadSymbol; // swap
+        dadSymbol = emoji;
       }
       buildPicker();
       document.getElementById('title').textContent = `${enaSymbol} Ena vs Dad ${dadSymbol}`;
