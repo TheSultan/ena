@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ena's Play Corner ✨</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #12062b;
+      --glass: rgba(255,255,255,0.07);
+      --glass-border: rgba(255,255,255,0.15);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      min-height: 100vh;
+      font-family: 'Nunito', sans-serif;
+      background: var(--bg);
+      overflow-x: hidden;
+      color: white;
+    }
+
+    /* ── Stars ── */
+    #stars {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Layout ── */
+    main {
+      position: relative;
+      z-index: 2;
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 48px 24px 64px;
+    }
+
+    /* ── Header ── */
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .header-stage {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      margin-bottom: 18px;
+    }
+
+    .side-pony {
+      width: 120px;
+      height: 120px;
+      object-fit: contain;
+      filter: drop-shadow(0 0 18px rgba(200,130,255,0.55));
+      animation: pony-float 3.5s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+
+    .side-pony.flip { transform: scaleX(-1); animation-name: pony-float-flip; }
+
+    @keyframes pony-float {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(-10px); }
+    }
+    @keyframes pony-float-flip {
+      0%, 100% { transform: scaleX(-1) translateY(0); }
+      50%       { transform: scaleX(-1) translateY(-10px); }
+    }
+
+    .title-group { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+
+    .luna-img {
+      width: 86px;
+      height: 86px;
+      object-fit: contain;
+      margin-bottom: -8px;
+      filter: drop-shadow(0 0 20px rgba(160,100,255,0.8));
+      animation: luna-bob 4s ease-in-out infinite;
+    }
+
+    @keyframes luna-bob {
+      0%, 100% { transform: translateY(0) rotate(-5deg); }
+      50%       { transform: translateY(-12px) rotate(5deg); }
+    }
+
+    h1 {
+      font-family: 'Fredoka One', cursive;
+      font-size: clamp(2.4rem, 5vw, 4rem);
+      background: linear-gradient(100deg, #ffb3de 0%, #ffd97d 25%, #b8f0a0 50%, #87d4ff 75%, #d4aaff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.1;
+      filter: drop-shadow(0 2px 12px rgba(200,150,255,0.35));
+      letter-spacing: 0.02em;
+    }
+
+    .subtitle {
+      font-size: 1.05rem;
+      color: rgba(255,255,255,0.6);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-top: 6px;
+    }
+
+    /* ── Rainbow bar ── */
+    .rainbow {
+      height: 5px;
+      max-width: 560px;
+      margin: 0 auto 40px;
+      border-radius: 99px;
+      background: linear-gradient(90deg, #ff6b6b, #ff9f43, #feca57, #26de81, #45aaf2, #a55eea, #ff6b6b);
+      background-size: 200%;
+      animation: rainbow-slide 4s linear infinite;
+      box-shadow: 0 0 24px rgba(255,200,100,0.25);
+    }
+
+    @keyframes rainbow-slide {
+      from { background-position: 0% 50%; }
+      to   { background-position: 200% 50%; }
+    }
+
+    /* ── Game grid ── */
+    .games {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+
+    .game-card {
+      display: block;
+      text-decoration: none;
+      border-radius: 22px;
+      overflow: hidden;
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      transition: transform 0.22s cubic-bezier(.34,1.56,.64,1), box-shadow 0.22s ease;
+      opacity: 0;
+      animation: card-in 0.5s ease forwards;
+    }
+
+    .game-card:hover  { transform: translateY(-10px) scale(1.02); }
+    .game-card:active { transform: translateY(-4px)  scale(1.01); }
+
+    @keyframes card-in {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .game-card:nth-child(1) { animation-delay: 0.05s; }
+    .game-card:nth-child(2) { animation-delay: 0.12s; }
+    .game-card:nth-child(3) { animation-delay: 0.19s; }
+    .game-card:nth-child(4) { animation-delay: 0.26s; }
+    .game-card:nth-child(5) { animation-delay: 0.33s; }
+    .game-card:nth-child(6) { animation-delay: 0.40s; }
+
+    /* Colored top strip */
+    .card-band { height: 7px; }
+    .c1 .card-band { background: linear-gradient(90deg, #ff6b6b, #feca57); }
+    .c2 .card-band { background: linear-gradient(90deg, #a855f7, #ec4899); }
+    .c3 .card-band { background: linear-gradient(90deg, #f59e0b, #34d399); }
+    .c4 .card-band { background: linear-gradient(90deg, #22d3ee, #3b82f6); }
+    .c5 .card-band { background: linear-gradient(90deg, #f472b6, #fb923c); }
+    .c6 .card-band { background: linear-gradient(90deg, #818cf8, #a78bfa); }
+
+    /* Hover glow */
+    .c1:hover { box-shadow: 0 20px 48px rgba(255,107,107,0.22); }
+    .c2:hover { box-shadow: 0 20px 48px rgba(168, 85,247,0.22); }
+    .c3:hover { box-shadow: 0 20px 48px rgba(245,158, 11,0.22); }
+    .c4:hover { box-shadow: 0 20px 48px rgba( 34,211,238,0.22); }
+    .c5:hover { box-shadow: 0 20px 48px rgba(244,114,182,0.22); }
+    .c6:hover { box-shadow: 0 20px 48px rgba(129,140,248,0.22); }
+
+    .card-body {
+      padding: 26px 20px 22px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 8px;
+    }
+
+    .card-icon { font-size: 3.2rem; line-height: 1; }
+
+    .card-name {
+      font-family: 'Fredoka One', cursive;
+      font-size: 1.45rem;
+      color: #fff;
+      letter-spacing: 0.02em;
+    }
+
+    .card-desc {
+      font-size: 0.82rem;
+      color: rgba(255,255,255,0.55);
+      font-weight: 700;
+      line-height: 1.45;
+    }
+
+    .card-go {
+      margin-top: 6px;
+      font-size: 1.2rem;
+      opacity: 0.45;
+      transition: transform 0.2s, opacity 0.2s;
+    }
+
+    .game-card:hover .card-go { transform: translateX(5px); opacity: 0.9; }
+
+    /* ── Pony parade ── */
+    .parade {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 2px;
+      margin-top: 52px;
+      padding-bottom: 8px;
+      position: relative;
+    }
+
+    .parade::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 700px;
+      height: 3px;
+      border-radius: 99px;
+      background: linear-gradient(90deg, transparent, #ffb3de, #ffd97d, #87d4ff, #d4aaff, transparent);
+    }
+
+    .parade img {
+      width: 82px;
+      height: 82px;
+      object-fit: contain;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.35));
+    }
+
+    .parade img:nth-child(1) { animation: pb1 2.4s ease-in-out infinite; }
+    .parade img:nth-child(2) { animation: pb2 2.8s ease-in-out infinite; }
+    .parade img:nth-child(3) { animation: pb1 3.1s ease-in-out infinite 0.3s; }
+    .parade img:nth-child(4) { animation: pb2 2.6s ease-in-out infinite 0.1s; }
+    .parade img:nth-child(5) { animation: pb1 2.9s ease-in-out infinite 0.5s; }
+    .parade img:nth-child(6) { animation: pb2 2.5s ease-in-out infinite 0.2s; }
+    .parade img:nth-child(7) { animation: pb1 3.0s ease-in-out infinite 0.4s; }
+
+    @keyframes pb1 { 0%,100%{transform:translateY(0)}     50%{transform:translateY(-9px)} }
+    @keyframes pb2 { 0%,100%{transform:translateY(-5px)}  50%{transform:translateY(4px)}  }
+  </style>
+</head>
+<body>
+
+  <canvas id="stars"></canvas>
+
+  <main>
+    <header>
+      <div class="header-stage">
+        <img class="side-pony" src="tictactoe/images/twilight.png" alt="">
+        <div class="title-group">
+          <img class="luna-img" src="tictactoe/images/luna.png" alt="">
+          <h1>Ena's Play Corner</h1>
+          <p class="subtitle">Pick a game to play with Dad 🌈</p>
+        </div>
+        <img class="side-pony flip" src="tictactoe/images/celestia.png" alt="">
+      </div>
+    </header>
+
+    <div class="rainbow"></div>
+
+    <section class="games">
+      <a class="game-card c1" href="tictactoe/index.html">
+        <div class="card-band"></div>
+        <div class="card-body">
+          <div class="card-icon">🎮</div>
+          <div class="card-name">Tic Tac Toe</div>
+          <div class="card-desc">Take turns and get three in a row!</div>
+          <div class="card-go">→</div>
+        </div>
+      </a>
+
+      <a class="game-card c2" href="memory/index.html">
+        <div class="card-band"></div>
+        <div class="card-body">
+          <div class="card-icon">🃏</div>
+          <div class="card-name">Memory Match</div>
+          <div class="card-desc">Find all the matching pony pairs!</div>
+          <div class="card-go">→</div>
+        </div>
+      </a>
+
+      <a class="game-card c3" href="counting/index.html">
+        <div class="card-band"></div>
+        <div class="card-body">
+          <div class="card-icon">🔢</div>
+          <div class="card-name">Count the Ponies</div>
+          <div class="card-desc">How many ponies can you count?</div>
+          <div class="card-go">→</div>
+        </div>
+      </a>
+
+      <a class="game-card c4" href="spinner/index.html">
+        <div class="card-band"></div>
+        <div class="card-body">
+          <div class="card-icon">🎡</div>
+          <div class="card-name">Spin the Wheel</div>
+          <div class="card-desc">Spin and see which pony you get!</div>
+          <div class="card-go">→</div>
+        </div>
+      </a>
+
+      <a class="game-card c5" href="stickers/index.html">
+        <div class="card-band"></div>
+        <div class="card-body">
+          <div class="card-icon">✨</div>
+          <div class="card-name">Sticker Book</div>
+          <div class="card-desc">Place ponies to make your own scene!</div>
+          <div class="card-go">→</div>
+        </div>
+      </a>
+
+      <a class="game-card c6" href="storybook/index.html">
+        <div class="card-band"></div>
+        <div class="card-body">
+          <div class="card-icon">📖</div>
+          <div class="card-name">Story Time</div>
+          <div class="card-desc">A magical adventure in Ponyville!</div>
+          <div class="card-go">→</div>
+        </div>
+      </a>
+    </section>
+
+    <div class="parade">
+      <img src="tictactoe/images/applejack.png"  alt="">
+      <img src="tictactoe/images/rarity.png"     alt="">
+      <img src="tictactoe/images/fluttershy.png" alt="">
+      <img src="tictactoe/images/starlight.png"  alt="">
+      <img src="tictactoe/images/sunset.png"     alt="">
+      <img src="tictactoe/images/trixie.png"     alt="">
+      <img src="tictactoe/images/cadance.png"    alt="">
+    </div>
+  </main>
+
+  <script>
+    const canvas = document.getElementById('stars');
+    const ctx    = canvas.getContext('2d');
+    let W, H, stars = [];
+
+    function resize() {
+      W = canvas.width  = window.innerWidth;
+      H = canvas.height = window.innerHeight;
+    }
+
+    function init() {
+      stars = Array.from({ length: 220 }, () => ({
+        x:     Math.random() * W,
+        y:     Math.random() * H,
+        r:     Math.random() * 1.6 + 0.2,
+        phase: Math.random() * Math.PI * 2,
+        speed: Math.random() * 0.8 + 0.3,
+      }));
+    }
+
+    function draw(t) {
+      ctx.clearRect(0, 0, W, H);
+      stars.forEach(s => {
+        const a = 0.25 + 0.75 * (0.5 + 0.5 * Math.sin(t * 0.001 * s.speed + s.phase));
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,255,255,${a})`;
+        ctx.fill();
+      });
+      requestAnimationFrame(draw);
+    }
+
+    resize();
+    init();
+    window.addEventListener('resize', () => { resize(); init(); });
+    requestAnimationFrame(draw);
+  </script>
+</body>
+</html>
