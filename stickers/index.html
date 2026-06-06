@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pony Sticker Book</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(160deg, #e8eaf6, #fce4ec);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-family: 'Segoe UI', sans-serif;
+      padding: 18px;
+      gap: 14px;
+    }
+
+    h1 {
+      font-size: 2rem;
+      color: #7b1fa2;
+      text-shadow: 2px 2px 0 #fff;
+    }
+
+    #layout {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+
+    /* Sticker palette */
+    #palette {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      background: rgba(255,255,255,0.6);
+      border-radius: 20px;
+      padding: 12px 10px;
+      border: 2px solid rgba(255,255,255,0.8);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    }
+
+    #palette-label {
+      font-size: 0.65rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: #9c27b0;
+      text-align: center;
+      letter-spacing: 0.06em;
+      margin-bottom: 2px;
+    }
+
+    .sticker-btn {
+      width: 72px;
+      height: 72px;
+      border-radius: 14px;
+      border: 3px solid transparent;
+      background: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      transition: transform 0.1s, border-color 0.15s;
+    }
+
+    .sticker-btn img { width: 54px; height: 54px; object-fit: contain; }
+
+    .sticker-btn:hover { transform: scale(1.12); }
+
+    .sticker-btn.active {
+      border-color: #ab47bc;
+      background: #f3e5f5;
+      transform: scale(1.1);
+    }
+
+    /* Scene */
+    #scene-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: center;
+    }
+
+    #scene {
+      position: relative;
+      width: 680px;
+      height: 460px;
+      border-radius: 24px;
+      overflow: hidden;
+      cursor: crosshair;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+      border: 3px solid rgba(255,255,255,0.7);
+      background:
+        /* Stars */
+        radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 1px) 30px 40px / 60px 60px,
+        radial-gradient(circle, rgba(255,255,255,0.7) 1px, transparent 1px) 55px 15px / 80px 80px,
+        radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px) 10px 65px / 70px 70px,
+        /* Sky */
+        linear-gradient(180deg, #9575cd 0%, #ba68c8 45%, #f8bbd9 65%, #a5d6a7 65%, #81c784 80%, #66bb6a 100%);
+    }
+
+    /* Rainbow arc drawn via pseudo */
+    #scene::before {
+      content: '';
+      position: absolute;
+      top: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 500px;
+      height: 280px;
+      border-radius: 250px 250px 0 0;
+      border: 28px solid transparent;
+      border-image: none;
+      background:
+        linear-gradient(white, white) padding-box,
+        linear-gradient(to right, red, orange, yellow, green, #4fc3f7, #7b1fa2) border-box;
+      opacity: 0.45;
+      pointer-events: none;
+    }
+
+    /* Placed stickers */
+    .placed {
+      position: absolute;
+      object-fit: contain;
+      cursor: pointer;
+      transition: transform 0.1s;
+      user-select: none;
+    }
+
+    .placed:hover { transform: scale(1.1); }
+
+    /* Size buttons */
+    #controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    #controls label {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #7b1fa2;
+    }
+
+    .size-btn {
+      background: white;
+      border: 3px solid #ce93d8;
+      border-radius: 50px;
+      padding: 6px 16px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #6a1b9a;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+
+    .size-btn.active {
+      background: #ab47bc;
+      color: white;
+      border-color: #7b1fa2;
+    }
+
+    #clear-btn {
+      background: white;
+      border: 3px solid #ef9a9a;
+      border-radius: 50px;
+      padding: 6px 18px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #c62828;
+      cursor: pointer;
+      margin-left: 10px;
+      transition: background 0.1s;
+    }
+
+    #clear-btn:hover { background: #ffebee; }
+
+    #hint {
+      font-size: 0.95rem;
+      color: #9c27b0;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Pony Sticker Book ✨</h1>
+
+  <div id="layout">
+
+    <div id="palette">
+      <div id="palette-label">Stickers</div>
+    </div>
+
+    <div id="scene-wrap">
+      <div id="scene"></div>
+      <div id="controls">
+        <label>Size:</label>
+        <button class="size-btn active" data-size="80">Small</button>
+        <button class="size-btn" data-size="110">Medium</button>
+        <button class="size-btn" data-size="150">Big</button>
+        <button id="clear-btn">Clear all</button>
+      </div>
+      <div id="hint">Pick a pony, then click anywhere on the scene!</div>
+    </div>
+
+  </div>
+
+  <script>
+    const CHARACTERS = [
+      { img: '../tictactoe/images/twilight.png',   name: 'Twilight'   },
+      { img: '../tictactoe/images/luna.png',       name: 'Luna'       },
+      { img: '../tictactoe/images/celestia.png',   name: 'Celestia'   },
+      { img: '../tictactoe/images/applejack.png',  name: 'Applejack'  },
+      { img: '../tictactoe/images/sunset.png',     name: 'Sunset'     },
+      { img: '../tictactoe/images/starlight.png',  name: 'Starlight'  },
+      { img: '../tictactoe/images/trixie.png',     name: 'Trixie'     },
+      { img: '../tictactoe/images/fluttershy.png', name: 'Fluttershy' },
+      { img: '../tictactoe/images/rarity.png',     name: 'Rarity'     },
+      { img: '../tictactoe/images/cadance.png',    name: 'Cadance'    },
+    ];
+
+    const palette = document.getElementById('palette');
+    const scene   = document.getElementById('scene');
+    const hint    = document.getElementById('hint');
+    const clearBtn = document.getElementById('clear-btn');
+
+    let selected = null;
+    let stickerSize = 80;
+
+    // Build palette
+    CHARACTERS.forEach(char => {
+      const btn = document.createElement('button');
+      btn.className = 'sticker-btn';
+      btn.title = char.name;
+      btn.innerHTML = `<img src="${char.img}" alt="${char.name}">`;
+      btn.addEventListener('click', () => selectSticker(btn, char));
+      palette.appendChild(btn);
+    });
+
+    function selectSticker(btn, char) {
+      document.querySelectorAll('.sticker-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selected = char;
+      hint.textContent = `${char.name} selected — click the scene to place!`;
+      scene.style.cursor = 'copy';
+    }
+
+    scene.addEventListener('click', e => {
+      if (!selected) return;
+      const rect = scene.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      const img = document.createElement('img');
+      img.src = selected.img;
+      img.alt = selected.name;
+      img.className = 'placed';
+      img.style.width  = stickerSize + 'px';
+      img.style.height = stickerSize + 'px';
+      img.style.left = (x - stickerSize / 2) + 'px';
+      img.style.top  = (y - stickerSize / 2) + 'px';
+      img.style.animationDelay = '0s';
+
+      // Click placed sticker to remove it
+      img.addEventListener('click', e => { e.stopPropagation(); img.remove(); });
+
+      scene.appendChild(img);
+    });
+
+    clearBtn.addEventListener('click', () => {
+      scene.querySelectorAll('.placed').forEach(el => el.remove());
+    });
+
+    // Size buttons
+    document.querySelectorAll('.size-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        stickerSize = parseInt(btn.dataset.size);
+      });
+    });
+  </script>
+</body>
+</html>
