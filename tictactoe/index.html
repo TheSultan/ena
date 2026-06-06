@@ -60,8 +60,11 @@
       gap: 6px;
     }
 
+    .sym-img  { width: 44px; height: 44px; object-fit: contain; }
+    .cell-img { width: 110px; height: 110px; object-fit: contain; animation: pop-in 0.3s cubic-bezier(.36,.07,.19,.97) both; }
+    .banner-img { height: 36px; vertical-align: middle; margin-right: 6px; }
+
     .symbol-btn {
-      font-size: 1.5rem;
       width: 54px;
       border: 3px solid transparent;
       border-radius: 12px;
@@ -185,10 +188,6 @@
       100% { transform: scale(1); }
     }
 
-    .cell .emoji {
-      display: inline-block;
-      animation: pop-in 0.3s cubic-bezier(.36,.07,.19,.97) both;
-    }
 
     /* Overlay */
     #overlay {
@@ -339,20 +338,22 @@
 
   <script>
     const SYMBOLS = [
-      { emoji: '🦄', name: 'Twilight' },
-      { emoji: '🌈', name: 'Rainbow' },
-      { emoji: '🦋', name: 'Fluttershy' },
-      { emoji: '🍎', name: 'Applejack' },
-      { emoji: '💎', name: 'Rarity' },
-      { emoji: '🎉', name: 'Pinkie' },
-      { emoji: '🌙', name: 'Luna' },
-      { emoji: '⭐', name: 'Starlight' },
-      { emoji: '🌸', name: 'Cadance' },
-      { emoji: '🎀', name: 'Sweetie' },
+      { img: 'https://static.wikia.nocookie.net/mlp-gameloft/images/1/1d/Twilight_Sparkle_Icon.png/revision/latest?cb=20180525115115', name: 'Twilight' },
+      { img: 'https://static.wikia.nocookie.net/mlp/images/1/18/Princess_Luna_ID_S5E04.png/revision/latest/scale-to-width-down/240?cb=20150422172452', name: 'Luna' },
+      { img: 'https://static.wikia.nocookie.net/mlp/images/2/2a/Princess_Celestia_ID_S4E01.png/revision/latest/scale-to-width-down/220?cb=20140322224921', name: 'Celestia' },
+      { img: 'https://static.wikia.nocookie.net/p__/images/2/26/Applejack%27s_artwork_in_My_Little_Pony_The_Movie.png/revision/latest?cb=20240131175330&path-prefix=protagonist', name: 'Applejack' },
+      { img: 'https://static.wikia.nocookie.net/p__/images/1/14/Kisspng-sunset-shimmer-my-little-pony-equestria-girls-sunset-vector-5b35d9dbd7f6b2.1365800415302558358846.png/revision/latest?cb=20190808044319&path-prefix=protagonist', name: 'Sunset' },
+      { img: 'https://static.wikia.nocookie.net/mlp-gameloft/images/2/28/Starlight_Glimmer.png/revision/latest?cb=20240305133824', name: 'Starlight' },
+      { img: 'https://static.wikia.nocookie.net/mlp/images/b/b1/Trixie_ID_S6E6.png/revision/latest/scale-to-width-down/225?cb=20160501114515', name: 'Trixie' },
+      { img: 'https://static.wikia.nocookie.net/mlp-gameloft/images/d/d8/Fluttershy_vector.png/revision/latest?cb=20220321042616', name: 'Fluttershy' },
+      { img: 'https://static.wikia.nocookie.net/mlp/images/d/d1/Rarity_standing_S1E19_CROPPED.png/revision/latest?cb=20130418142043', name: 'Rarity' },
+      { img: 'https://static.wikia.nocookie.net/mlp/images/6/6f/Princess_Cadance_ID_S4E11.png/revision/latest?cb=20140128163901', name: 'Cadance' },
     ];
 
-    let enaSymbol = '🦄';
-    let dadSymbol = '🌈';
+    function getSymbol(name) { return SYMBOLS.find(s => s.name === name); }
+
+    let enaSymbol = 'Twilight';
+    let dadSymbol = 'Applejack';
 
     const WIN_LINES = [
       [0,1,2],[3,4,5],[6,7,8], // rows
@@ -377,27 +378,27 @@
       ['ena', 'dad'].forEach(who => {
         const container = document.getElementById(`${who}-symbols`);
         container.innerHTML = '';
-        SYMBOLS.forEach(({ emoji, name }) => {
+        SYMBOLS.forEach(({ img, name }) => {
           const btn = document.createElement('button');
           btn.className = 'symbol-btn';
-          const isMine = who === 'ena' ? emoji === enaSymbol : emoji === dadSymbol;
-          const isOther = who === 'ena' ? emoji === dadSymbol : emoji === enaSymbol;
+          const isMine = who === 'ena' ? name === enaSymbol : name === dadSymbol;
+          const isOther = who === 'ena' ? name === dadSymbol : name === enaSymbol;
           if (isMine) btn.classList.add('selected');
           if (isOther) btn.classList.add('other');
-          btn.innerHTML = `<span>${emoji}</span><span class="sym-name">${name}</span>`;
-          btn.addEventListener('click', () => pickSymbol(who, emoji));
+          btn.innerHTML = `<img src="${img}" class="sym-img" alt="${name}"><span class="sym-name">${name}</span>`;
+          btn.addEventListener('click', () => pickSymbol(who, name));
           container.appendChild(btn);
         });
       });
     }
 
-    function pickSymbol(who, emoji) {
+    function pickSymbol(who, name) {
       if (who === 'ena') {
-        if (emoji === dadSymbol) dadSymbol = enaSymbol; // swap
-        enaSymbol = emoji;
+        if (name === dadSymbol) dadSymbol = enaSymbol;
+        enaSymbol = name;
       } else {
-        if (emoji === enaSymbol) enaSymbol = dadSymbol; // swap
-        dadSymbol = emoji;
+        if (name === enaSymbol) enaSymbol = dadSymbol;
+        dadSymbol = name;
       }
       buildPicker();
       document.getElementById('title').textContent = `${enaSymbol} Ena vs Dad ${dadSymbol}`;
@@ -406,10 +407,10 @@
 
     function updateBanner() {
       if (currentPlayer === enaSymbol) {
-        banner.textContent = `${enaSymbol} Ena's Turn!`;
+        banner.innerHTML = `<img src="${getSymbol(enaSymbol).img}" class="banner-img" alt="${enaSymbol}"> Ena's Turn!`;
         banner.classList.remove('dad');
       } else {
-        banner.textContent = `${dadSymbol} Dad's Turn!`;
+        banner.innerHTML = `<img src="${getSymbol(dadSymbol).img}" class="banner-img" alt="${dadSymbol}"> Dad's Turn!`;
         banner.classList.add('dad');
       }
     }
@@ -464,7 +465,7 @@
       if (gameOver || board[idx]) return;
 
       board[idx] = currentPlayer;
-      cell.innerHTML = `<span class="emoji">${currentPlayer}</span>`;
+      cell.innerHTML = `<img src="${getSymbol(currentPlayer).img}" class="cell-img" alt="${currentPlayer}">`;
       cell.classList.add('taken');
 
       const state = checkState();
