@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Count the Ponies!</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Segoe UI', sans-serif;
+      padding: 20px;
+      transition: background 0.5s;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      color: #fff;
+      text-shadow: 2px 3px 0 rgba(0,0,0,0.18);
+      margin-bottom: 14px;
+    }
+
+    /* Scene */
+    #scene {
+      position: relative;
+      width: 700px;
+      height: 360px;
+      border-radius: 28px;
+      background: rgba(255,255,255,0.35);
+      border: 3px solid rgba(255,255,255,0.6);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+      overflow: hidden;
+      margin-bottom: 22px;
+    }
+
+    .pony {
+      position: absolute;
+      width: 90px;
+      height: 90px;
+      object-fit: contain;
+      animation: pop-in 0.3s cubic-bezier(.36,.07,.19,.97) both;
+    }
+
+    @keyframes pop-in {
+      0%   { transform: scale(0) rotate(-15deg); opacity: 0; }
+      70%  { transform: scale(1.15) rotate(4deg); }
+      100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    }
+
+    /* Question */
+    #question {
+      font-size: 1.9rem;
+      font-weight: 800;
+      color: #fff;
+      text-shadow: 1px 2px 0 rgba(0,0,0,0.2);
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    /* Answer buttons */
+    #choices {
+      display: flex;
+      gap: 18px;
+      margin-bottom: 20px;
+    }
+
+    .choice-btn {
+      width: 110px;
+      height: 110px;
+      border-radius: 22px;
+      border: none;
+      font-size: 3rem;
+      font-weight: 900;
+      cursor: pointer;
+      background: white;
+      color: #5e35b1;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+      transition: transform 0.1s, background 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .choice-btn:hover:not(:disabled) { transform: scale(1.1); }
+    .choice-btn:disabled { cursor: default; }
+
+    .choice-btn.correct {
+      background: #a5d6a7;
+      color: #1b5e20;
+      animation: correct-bounce 0.4s cubic-bezier(.36,.07,.19,.97);
+    }
+
+    .choice-btn.wrong {
+      background: #ef9a9a;
+      color: #7f0000;
+      animation: wrong-shake 0.35s ease;
+    }
+
+    @keyframes correct-bounce {
+      0%,100% { transform: scale(1); }
+      40%      { transform: scale(1.2); }
+    }
+
+    @keyframes wrong-shake {
+      0%,100% { transform: translateX(0); }
+      25%      { transform: translateX(-8px); }
+      75%      { transform: translateX(8px); }
+    }
+
+    /* Next button */
+    #next-btn {
+      display: none;
+      background: white;
+      color: #7b1fa2;
+      border: none;
+      border-radius: 50px;
+      padding: 14px 40px;
+      font-size: 1.3rem;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      transition: transform 0.1s;
+    }
+
+    #next-btn:hover { transform: scale(1.06); }
+
+    /* Confetti */
+    .confetti {
+      position: fixed;
+      top: -12px;
+      border-radius: 3px;
+      animation: fall linear forwards;
+      z-index: 20;
+      pointer-events: none;
+    }
+
+    @keyframes fall {
+      to { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Count the Ponies! 🌟</h1>
+  <div id="scene"></div>
+  <div id="question"></div>
+  <div id="choices"></div>
+  <button id="next-btn">Next ponies! →</button>
+
+  <script>
+    const CHARACTERS = [
+      { img: '../tictactoe/images/twilight.png',   name: 'Twilight'   },
+      { img: '../tictactoe/images/luna.png',       name: 'Luna'       },
+      { img: '../tictactoe/images/celestia.png',   name: 'Celestia'   },
+      { img: '../tictactoe/images/applejack.png',  name: 'Applejack'  },
+      { img: '../tictactoe/images/sunset.png',     name: 'Sunset'     },
+      { img: '../tictactoe/images/starlight.png',  name: 'Starlight'  },
+      { img: '../tictactoe/images/trixie.png',     name: 'Trixie'     },
+      { img: '../tictactoe/images/fluttershy.png', name: 'Fluttershy' },
+      { img: '../tictactoe/images/rarity.png',     name: 'Rarity'     },
+      { img: '../tictactoe/images/cadance.png',    name: 'Cadance'    },
+    ];
+
+    const BG_GRADIENTS = [
+      'linear-gradient(135deg, #f48fb1, #ce93d8)',
+      'linear-gradient(135deg, #80deea, #80cbc4)',
+      'linear-gradient(135deg, #ffe082, #ffab91)',
+      'linear-gradient(135deg, #a5d6a7, #80deea)',
+      'linear-gradient(135deg, #b39ddb, #90caf9)',
+      'linear-gradient(135deg, #f48fb1, #90caf9)',
+      'linear-gradient(135deg, #ffcc80, #ef9a9a)',
+      'linear-gradient(135deg, #80cbc4, #b39ddb)',
+    ];
+
+    const CONFETTI_COLORS = ['#ff6f61','#ffd200','#6dd5ed','#a8e063','#f7971e','#c471ed','#12c2e9'];
+
+    const scene     = document.getElementById('scene');
+    const question  = document.getElementById('question');
+    const choices   = document.getElementById('choices');
+    const nextBtn   = document.getElementById('next-btn');
+
+    // 10 grid slots (5 cols × 2 rows), centers within 700×360 scene
+    const SLOTS = [];
+    for (let row = 0; row < 2; row++) {
+      for (let col = 0; col < 5; col++) {
+        SLOTS.push({ cx: 70 + col * 120, cy: 90 + row * 180 });
+      }
+    }
+
+    let lastCount = -1;
+    let lastCharIdx = -1;
+
+    function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+    function pickCount() {
+      let n;
+      do { n = rand(1, 10); } while (n === lastCount);
+      return n;
+    }
+
+    function pickChar() {
+      let i;
+      do { i = rand(0, CHARACTERS.length - 1); } while (i === lastCharIdx);
+      return i;
+    }
+
+    function shuffle(arr) { return [...arr].sort(() => Math.random() - 0.5); }
+
+    function buildChoices(correct) {
+      const wrong = new Set();
+      while (wrong.size < 2) {
+        const n = rand(1, 10);
+        if (n !== correct) wrong.add(n);
+      }
+      return shuffle([correct, ...wrong]);
+    }
+
+    function newRound() {
+      const count   = pickCount();
+      const charIdx = pickChar();
+      lastCount   = count;
+      lastCharIdx = charIdx;
+      const char  = CHARACTERS[charIdx];
+
+      // Background
+      document.body.style.background = BG_GRADIENTS[rand(0, BG_GRADIENTS.length - 1)];
+
+      // Scene — place count ponies at shuffled slot positions, jittered
+      scene.innerHTML = '';
+      const slots = shuffle(SLOTS).slice(0, count);
+      slots.forEach((slot, i) => {
+        const img = document.createElement('img');
+        img.src = char.img;
+        img.alt = char.name;
+        img.className = 'pony';
+        const jx = rand(-22, 22);
+        const jy = rand(-22, 22);
+        img.style.left = (slot.cx - 45 + jx) + 'px';
+        img.style.top  = (slot.cy - 45 + jy) + 'px';
+        img.style.animationDelay = (i * 0.07) + 's';
+        scene.appendChild(img);
+      });
+
+      // Question
+      const plural = count === 1 ? char.name : char.name + 's';
+      question.textContent = `How many ${plural}?`;
+
+      // Choices
+      const nums = buildChoices(count);
+      choices.innerHTML = '';
+      nums.forEach(n => {
+        const btn = document.createElement('button');
+        btn.className = 'choice-btn';
+        btn.textContent = n;
+        btn.addEventListener('click', () => handleAnswer(btn, n, count));
+        choices.appendChild(btn);
+      });
+
+      nextBtn.style.display = 'none';
+    }
+
+    function handleAnswer(btn, chosen, correct) {
+      // Disable all buttons
+      choices.querySelectorAll('.choice-btn').forEach(b => b.disabled = true);
+
+      if (chosen === correct) {
+        btn.classList.add('correct');
+        spawnConfetti();
+      } else {
+        btn.classList.add('wrong');
+        // Highlight the correct one
+        choices.querySelectorAll('.choice-btn').forEach(b => {
+          if (Number(b.textContent) === correct) b.classList.add('correct');
+        });
+      }
+
+      nextBtn.style.display = 'inline-block';
+    }
+
+    function spawnConfetti() {
+      for (let i = 0; i < 70; i++) {
+        const el = document.createElement('div');
+        el.className = 'confetti';
+        el.style.left = Math.random() * 100 + 'vw';
+        el.style.background = CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)];
+        el.style.width  = (8 + Math.random() * 10) + 'px';
+        el.style.height = el.style.width;
+        el.style.animationDuration = (1.5 + Math.random() * 2) + 's';
+        el.style.animationDelay   = (Math.random() * 0.5) + 's';
+        document.body.appendChild(el);
+        el.addEventListener('animationend', () => el.remove());
+      }
+    }
+
+    nextBtn.addEventListener('click', newRound);
+    newRound();
+  </script>
+</body>
+</html>
