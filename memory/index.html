@@ -33,8 +33,31 @@
 
     #board {
       display: grid;
-      grid-template-columns: repeat(5, 130px);
+      grid-template-columns: 36px repeat(5, 130px);
       gap: 12px;
+    }
+
+    .board-label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      font-weight: bold;
+      color: #7b1fa2;
+      opacity: 0.7;
+    }
+
+    .card-coord {
+      position: absolute;
+      bottom: 6px;
+      right: 8px;
+      font-size: 0.7rem;
+      font-weight: 900;
+      color: rgba(255,255,255,0.85);
+      letter-spacing: 0.03em;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+      z-index: 2;
+      pointer-events: none;
     }
 
     /* --- Card shell --- */
@@ -249,6 +272,15 @@
       return [...arr].sort(() => Math.random() - 0.5);
     }
 
+    const ROW_LABELS = ['A', 'B', 'C', 'D'];
+
+    function makeLabel(text) {
+      const el = document.createElement('div');
+      el.className = 'board-label';
+      el.textContent = text;
+      return el;
+    }
+
     function buildBoard() {
       board.innerHTML = '';
       cardEls = [];
@@ -260,12 +292,23 @@
 
       cards = shuffle([...CHARACTERS, ...CHARACTERS].map((c, i) => ({ ...c, uid: i })));
 
+      // Column header row: empty corner + 1–5
+      board.appendChild(makeLabel(''));
+      for (let c = 1; c <= 5; c++) board.appendChild(makeLabel(c));
+
       cards.forEach((char, idx) => {
+        const col = idx % 5;
+        const row = Math.floor(idx / 5);
+        const coord = ROW_LABELS[row] + (col + 1);
+
+        // Row label at start of each row
+        if (col === 0) board.appendChild(makeLabel(ROW_LABELS[row]));
+
         const card = document.createElement('div');
         card.className = 'card';
         card.innerHTML = `
           <div class="card-inner">
-            <div class="card-back">🌟</div>
+            <div class="card-back">🌟<span class="card-coord">${coord}</span></div>
             <div class="card-front">
               <img src="${char.img}" alt="${char.name}">
               <span class="char-name">${char.name}</span>
