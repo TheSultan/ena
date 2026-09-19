@@ -16,6 +16,7 @@
       font-family: 'Segoe UI', sans-serif;
       padding: 18px;
       gap: 14px;
+      touch-action: manipulation;
     }
 
     h1 {
@@ -28,6 +29,9 @@
       display: flex;
       gap: 16px;
       align-items: flex-start;
+      width: 100%;
+      max-width: 900px;
+      justify-content: center;
     }
 
     /* Sticker palette */
@@ -83,12 +87,15 @@
       flex-direction: column;
       gap: 10px;
       align-items: center;
+      flex: 1;
+      min-width: 0;
     }
 
     #scene {
       position: relative;
-      width: 680px;
-      height: 460px;
+      width: 100%;
+      max-width: 680px;
+      aspect-ratio: 680 / 460;
       border-radius: 24px;
       overflow: hidden;
       cursor: crosshair;
@@ -107,12 +114,12 @@
     #scene::before {
       content: '';
       position: absolute;
-      top: 60px;
+      top: 13%;
       left: 50%;
       transform: translateX(-50%);
-      width: 500px;
-      height: 280px;
-      border-radius: 250px 250px 0 0;
+      width: 73.5%;
+      height: 60.9%;
+      border-radius: 50% 50% 0 0 / 100% 100% 0 0;
       border: 28px solid transparent;
       border-image: none;
       background:
@@ -136,6 +143,8 @@
     /* Size buttons */
     #controls {
       display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
       gap: 10px;
       align-items: center;
     }
@@ -183,6 +192,25 @@
       font-size: 0.95rem;
       color: #9c27b0;
       font-weight: 600;
+      text-align: center;
+    }
+
+    @media (max-width: 700px) {
+      body { padding: 12px; }
+      #layout { flex-direction: column; align-items: stretch; }
+      #palette {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+        padding: 8px;
+        gap: 6px;
+      }
+      #palette-label { width: 100%; }
+      .sticker-btn { width: 52px; height: 52px; }
+      .sticker-btn img { width: 40px; height: 40px; }
+      #scene { border-radius: 16px; }
+      #scene::before { border-width: 14px; }
+      #clear-btn { margin-left: 0; }
     }
   </style>
 </head>
@@ -260,10 +288,11 @@
       img.src = selected.img;
       img.alt = selected.name;
       img.className = 'placed';
-      img.style.width  = stickerSize + 'px';
-      img.style.height = stickerSize + 'px';
-      img.style.left = (x - stickerSize / 2) + 'px';
-      img.style.top  = (y - stickerSize / 2) + 'px';
+      const size = stickerSize / 680 * rect.width;
+      img.style.width  = (stickerSize / 680 * 100) + '%';
+      img.style.aspectRatio = '1';
+      img.style.left = ((x - size / 2) / rect.width * 100) + '%';
+      img.style.top  = ((y - size / 2) / rect.height * 100) + '%';
       img.style.animationDelay = '0s';
 
       // Click placed sticker to remove it

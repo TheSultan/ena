@@ -15,6 +15,7 @@
       align-items: center;
       padding: 20px;
       font-family: 'Segoe UI', sans-serif;
+      touch-action: manipulation;
     }
 
     h1 {
@@ -33,7 +34,9 @@
 
     #board {
       display: grid;
-      grid-template-columns: 36px repeat(5, 130px);
+      width: 100%;
+      max-width: 750px;
+      grid-template-columns: 36px repeat(5, minmax(0, 1fr));
       gap: 12px;
     }
 
@@ -62,8 +65,8 @@
 
     /* --- Card shell --- */
     .card {
-      width: 130px;
-      height: 170px;
+      width: 100%;
+      aspect-ratio: 130 / 170;
       perspective: 600px;
       cursor: pointer;
     }
@@ -116,8 +119,8 @@
     }
 
     .card-front img {
-      width: 86px;
-      height: 86px;
+      width: 66%;
+      aspect-ratio: 1;
       object-fit: contain;
     }
 
@@ -220,6 +223,21 @@
 
     @keyframes fall {
       to { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+    }
+
+    @media (max-width: 600px) {
+      body { padding: 12px; }
+      h1 { font-size: 1.6rem; }
+      #board { grid-template-columns: 20px repeat(5, minmax(0, 1fr)); gap: 6px; }
+      .board-label { font-size: 1rem; }
+      .card-back { font-size: 1.6rem; border-width: 2px; border-radius: 10px; }
+      .card-front { padding: 4px 2px; gap: 2px; border-width: 2px; border-radius: 10px; }
+      .card-inner { border-radius: 10px; }
+      .card-front .char-name { font-size: 0.4rem; letter-spacing: 0; }
+      .card-coord { font-size: 0.55rem; bottom: 3px; right: 4px; }
+      #overlay-card { padding: 28px 24px; margin: 0 16px; }
+      #overlay-card .big-emoji { font-size: 3rem; }
+      #overlay-card h2 { font-size: 1.5rem; }
     }
   </style>
 </head>

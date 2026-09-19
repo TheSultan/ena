@@ -16,6 +16,7 @@
       font-family: 'Segoe UI', sans-serif;
       padding: 20px;
       transition: background 0.5s;
+      touch-action: manipulation;
     }
 
     h1 {
@@ -25,11 +26,44 @@
       margin-bottom: 14px;
     }
 
+    /* Mode tabs */
+    #modes {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .mode-btn {
+      border: none;
+      border-radius: 50px;
+      padding: 10px 22px;
+      font-size: 1.05rem;
+      font-weight: 800;
+      cursor: pointer;
+      background: rgba(255,255,255,0.35);
+      color: #fff;
+      text-shadow: 1px 1px 0 rgba(0,0,0,0.15);
+      transition: transform 0.1s, background 0.15s;
+    }
+
+    .mode-btn:hover { transform: scale(1.06); }
+
+    .mode-btn.active {
+      background: white;
+      color: #7b1fa2;
+      text-shadow: none;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+    }
+
     /* Scene */
     #scene {
       position: relative;
-      width: 700px;
-      height: 360px;
+      container-type: inline-size;
+      width: 100%;
+      max-width: 700px;
+      aspect-ratio: 700 / 360;
       border-radius: 28px;
       background: rgba(255,255,255,0.35);
       border: 3px solid rgba(255,255,255,0.6);
@@ -40,8 +74,8 @@
 
     .pony {
       position: absolute;
-      width: 90px;
-      height: 90px;
+      width: 12.857%;
+      aspect-ratio: 1;
       object-fit: contain;
       animation: pop-in 0.3s cubic-bezier(.36,.07,.19,.97) both;
     }
@@ -50,6 +84,43 @@
       0%   { transform: scale(0) rotate(-15deg); opacity: 0; }
       70%  { transform: scale(1.15) rotate(4deg); }
       100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    }
+
+    .pony.gone {
+      animation: pop-in 0.3s cubic-bezier(.36,.07,.19,.97) both,
+                 fade-away 0.6s ease 1.2s forwards;
+    }
+
+    @keyframes fade-away {
+      to { opacity: 0.25; filter: grayscale(1); }
+    }
+
+    .gone-mark {
+      position: absolute;
+      font-size: 6.9cqw;
+      font-weight: 900;
+      color: #d32f2f;
+      text-shadow: 0 0 6px rgba(255,255,255,0.8);
+      pointer-events: none;
+      opacity: 0;
+      animation: mark-in 0.3s ease 1.6s forwards;
+    }
+
+    @keyframes mark-in {
+      from { opacity: 0; transform: scale(2); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+
+    #plus-sign {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 10.3cqw;
+      font-weight: 900;
+      color: #fff;
+      text-shadow: 2px 3px 0 rgba(0,0,0,0.18);
+      pointer-events: none;
     }
 
     /* Question */
@@ -70,11 +141,11 @@
     }
 
     .choice-btn {
-      width: 110px;
-      height: 110px;
+      width: clamp(84px, 26vw, 110px);
+      aspect-ratio: 1;
       border-radius: 22px;
       border: none;
-      font-size: 3rem;
+      font-size: clamp(2.2rem, 9vw, 3rem);
       font-weight: 900;
       cursor: pointer;
       background: white;
@@ -155,11 +226,26 @@
     @keyframes fall {
       to { transform: translateY(110vh) rotate(720deg); opacity: 0; }
     }
+
+    @media (max-width: 600px) {
+      body { padding: 12px; }
+      h1 { font-size: 1.6rem; text-align: center; }
+      #modes { gap: 8px; }
+      .mode-btn { padding: 8px 14px; font-size: 0.95rem; }
+      #scene { border-radius: 18px; }
+      #question { font-size: 1.5rem; margin-bottom: 14px; }
+      #choices { gap: 12px; }
+    }
   </style>
 </head>
 <body>
 
   <h1>Count the Ponies! 🌟</h1>
+  <div id="modes">
+    <button class="mode-btn active" data-mode="count">1️⃣ Counting</button>
+    <button class="mode-btn" data-mode="add">➕ Adding</button>
+    <button class="mode-btn" data-mode="sub">➖ Taking Away</button>
+  </div>
   <div id="scene"></div>
   <div id="question"></div>
   <div id="choices"></div>
@@ -205,8 +291,24 @@
       }
     }
 
+    let mode = 'count';
     let lastCount = -1;
     let lastCharIdx = -1;
+
+    const HEADINGS = {
+      count: 'Count the Ponies! 🌟',
+      add:   'Adding Ponies! ➕',
+      sub:   'Ponies Fly Away! ➖',
+    };
+
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        mode = btn.dataset.mode;
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b === btn));
+        document.querySelector('h1').textContent = HEADINGS[mode];
+        newRound();
+      });
+    });
 
     function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
 
@@ -233,45 +335,97 @@
       return shuffle([correct, ...wrong]);
     }
 
-    function newRound() {
+    function placePony(char, slot, delay) {
+      const img = document.createElement('img');
+      img.src = char.img;
+      img.alt = char.name;
+      img.className = 'pony';
+      const x = slot.cx - 45 + rand(-22, 22);
+      const y = slot.cy - 45 + rand(-22, 22);
+      img.style.left = (x / 7) + '%';
+      img.style.top  = (y / 3.6) + '%';
+      img.style.animationDelay = delay + 's';
+      scene.appendChild(img);
+      return { img, x, y };
+    }
+
+    function countRound() {
       const count   = pickCount();
       const charIdx = pickChar();
       lastCount   = count;
       lastCharIdx = charIdx;
       const char  = CHARACTERS[charIdx];
 
-      // Background
-      document.body.style.background = BG_GRADIENTS[rand(0, BG_GRADIENTS.length - 1)];
+      shuffle(SLOTS).slice(0, count).forEach((slot, i) => placePony(char, slot, i * 0.07));
 
-      // Scene — place count ponies at shuffled slot positions, jittered
-      scene.innerHTML = '';
-      const slots = shuffle(SLOTS).slice(0, count);
-      slots.forEach((slot, i) => {
-        const img = document.createElement('img');
-        img.src = char.img;
-        img.alt = char.name;
-        img.className = 'pony';
-        const jx = rand(-22, 22);
-        const jy = rand(-22, 22);
-        img.style.left = (slot.cx - 45 + jx) + 'px';
-        img.style.top  = (slot.cy - 45 + jy) + 'px';
-        img.style.animationDelay = (i * 0.07) + 's';
-        scene.appendChild(img);
-      });
-
-      // Question
       const plural = count === 1 ? char.name : char.name + 's';
       question.textContent = `How many ${plural}?`;
+      return count;
+    }
 
-      // Choices
-      const nums = buildChoices(count);
+    // Left group in columns 0–1, right group in columns 3–4, "+" in the middle
+    function addRound() {
+      const a = rand(1, 4);
+      const b = rand(1, 4);
+      const idxA = pickChar();
+      let idxB;
+      do { idxB = rand(0, CHARACTERS.length - 1); } while (idxB === idxA);
+      lastCharIdx = idxA;
+
+      const leftSlots  = SLOTS.filter(s => s.cx < 250);
+      const rightSlots = SLOTS.filter(s => s.cx > 400);
+      shuffle(leftSlots).slice(0, a).forEach((slot, i) => placePony(CHARACTERS[idxA], slot, i * 0.07));
+      shuffle(rightSlots).slice(0, b).forEach((slot, i) => placePony(CHARACTERS[idxB], slot, (a + i) * 0.07));
+
+      const plus = document.createElement('div');
+      plus.id = 'plus-sign';
+      plus.textContent = '+';
+      scene.appendChild(plus);
+
+      question.textContent = `${a} + ${b} = ?`;
+      return a + b;
+    }
+
+    function subRound() {
+      const a = rand(2, 8);
+      const b = rand(1, a - 1);
+      const charIdx = pickChar();
+      lastCharIdx = charIdx;
+      const char = CHARACTERS[charIdx];
+
+      const slots = shuffle(SLOTS).slice(0, a);
+      slots.forEach((slot, i) => {
+        const { img, x, y } = placePony(char, slot, i * 0.07);
+        if (i >= a - b) {
+          img.classList.add('gone');
+          const mark = document.createElement('div');
+          mark.className = 'gone-mark';
+          mark.textContent = '✖';
+          mark.style.left = ((x + 26) / 7) + '%';
+          mark.style.top  = ((y + 16) / 3.6) + '%';
+          scene.appendChild(mark);
+        }
+      });
+
+      question.textContent = `${a} − ${b} = ?`;
+      return a - b;
+    }
+
+    function newRound() {
+      document.body.style.background = BG_GRADIENTS[rand(0, BG_GRADIENTS.length - 1)];
+      scene.innerHTML = '';
+
+      const answer = mode === 'add' ? addRound() : mode === 'sub' ? subRound() : countRound();
+
+      const nums = buildChoices(answer);
       choices.innerHTML = '';
       const LABELS = ['A', 'B', 'C'];
       nums.forEach((n, i) => {
         const btn = document.createElement('button');
         btn.className = 'choice-btn';
         btn.innerHTML = `<span class="choice-letter">${LABELS[i]}</span>${n}`;
-        btn.addEventListener('click', () => handleAnswer(btn, n, count));
+        btn.dataset.value = n;
+        btn.addEventListener('click', () => handleAnswer(btn, n, answer));
         choices.appendChild(btn);
       });
 
@@ -289,7 +443,7 @@
         btn.classList.add('wrong');
         // Highlight the correct one
         choices.querySelectorAll('.choice-btn').forEach(b => {
-          if (Number(b.textContent) === correct) b.classList.add('correct');
+          if (Number(b.dataset.value) === correct) b.classList.add('correct');
         });
       }
 

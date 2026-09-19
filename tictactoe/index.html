@@ -20,6 +20,8 @@
       background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 50%, #ffeaa7 100%);
       font-family: 'Segoe UI', sans-serif;
       user-select: none;
+      padding: 12px;
+      touch-action: manipulation;
     }
 
     h1 {
@@ -32,6 +34,7 @@
 
     /* Symbol picker */
     #picker {
+      max-width: 100%;
       display: flex;
       flex-direction: column;
       gap: 8px;
@@ -58,14 +61,17 @@
     .picker-symbols {
       display: flex;
       gap: 6px;
+      min-width: 0;
     }
 
-    .sym-img  { width: 44px; height: 44px; object-fit: contain; }
-    .cell-img { width: 110px; height: 110px; object-fit: contain; animation: pop-in 0.3s cubic-bezier(.36,.07,.19,.97) both; }
+    .sym-img  { width: 100%; aspect-ratio: 1; object-fit: contain; }
+    .cell-img { width: 70%; height: 70%; object-fit: contain; animation: pop-in 0.3s cubic-bezier(.36,.07,.19,.97) both; }
     .banner-img { height: 36px; vertical-align: middle; margin-right: 6px; }
 
     .symbol-btn {
-      width: 54px;
+      flex: 1 1 54px;
+      max-width: 54px;
+      min-width: 0;
       border: 3px solid transparent;
       border-radius: 12px;
       background: white;
@@ -124,7 +130,8 @@
 
     #board {
       display: grid;
-      grid-template-columns: 40px repeat(3, 1fr);
+      width: min(100%, 602px);
+      grid-template-columns: 40px repeat(3, minmax(0, 1fr));
       gap: 14px;
       background: rgba(255,255,255,0.35);
       border-radius: 24px;
@@ -143,8 +150,8 @@
     }
 
     .cell {
-      width: 160px;
-      height: 160px;
+      width: 100%;
+      aspect-ratio: 1;
       background: white;
       border-radius: 20px;
       display: flex;
@@ -274,17 +281,19 @@
 
     /* Responsive for smaller screens */
     @media (max-width: 580px) {
-      .cell {
-        width: 28vw;
-        height: 28vw;
-        font-size: 15vw;
-        border-radius: 14px;
-      }
-      #board { gap: 10px; padding: 14px; border-radius: 18px; }
+      .cell { border-radius: 14px; }
+      #board { grid-template-columns: 24px repeat(3, minmax(0, 1fr)); gap: 8px; padding: 12px; border-radius: 18px; }
+      .board-label { font-size: 1.1rem; }
       h1 { font-size: 1.4rem; }
-      #turn-banner { font-size: 1.3rem; }
-      .symbol-btn { width: 44px; font-size: 1.2rem; }
-      .symbol-btn .sym-name { font-size: 0.45rem; }
+      #turn-banner { font-size: 1.3rem; margin-bottom: 0.8rem; }
+      #picker { padding: 10px 12px; }
+      .picker-label { min-width: 38px; font-size: 0.9rem; }
+      .picker-symbols { flex-wrap: wrap; }
+      .symbol-btn { flex: 0 0 calc((100% - 24px) / 5); max-width: none; }
+      .symbol-btn .sym-name { font-size: 0.5rem; }
+      #overlay-card { padding: 1.5rem 1.5rem; margin: 0 16px; }
+      #overlay-emoji { font-size: 80px; }
+      #overlay-message { font-size: 1.7rem; }
     }
   </style>
 </head>
