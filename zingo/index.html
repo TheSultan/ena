@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zingo!</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #e8eaf6 0%, #fce4ec 50%, #e0f7fa 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-family: 'Segoe UI', sans-serif;
+      padding: 16px;
+      gap: 14px;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      color: #7b1fa2;
+      text-shadow: 2px 2px 0 #fff;
+    }
+
+    #instructions {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #6a1b9a;
+      text-align: center;
+      min-height: 1.5em;
+    }
+
+    #main {
+      display: flex;
+      gap: 32px;
+      align-items: flex-start;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    /* Card with coordinate labels */
+    #card-wrap {
+      display: grid;
+      grid-template-columns: 34px repeat(3, 130px);
+      grid-template-rows: 34px repeat(3, 130px);
+      gap: 8px;
+      background: white;
+      padding: 14px;
+      border-radius: 24px;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.15);
+    }
+
+    .label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #7b1fa2;
+    }
+
+    .cell {
+      position: relative;
+      border: 4px solid #ce93d8;
+      border-radius: 16px;
+      background: #faf5ff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.1s;
+    }
+    .cell:hover { transform: scale(1.04); }
+    .cell img { width: 100%; height: 100%; object-fit: contain; padding: 6px; }
+
+    .cell.covered { background: #fff8c4; border-color: #ffca28; cursor: default; }
+    .cell.covered img { opacity: 0.35; }
+    .cell.covered::after {
+      content: '⭐';
+      position: absolute;
+      font-size: 3.4rem;
+      animation: pop 0.35s ease-out;
+    }
+    @keyframes pop {
+      0% { transform: scale(0) rotate(-90deg); }
+      70% { transform: scale(1.3) rotate(10deg); }
+      100% { transform: scale(1) rotate(0); }
+    }
+
+    .cell.nope { animation: shake 0.35s; }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-8px); }
+      75% { transform: translateX(8px); }
+    }
+
+    /* Dispenser */
+    #dispenser {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    #tiles {
+      display: flex;
+      gap: 16px;
+      min-height: 190px;
+    }
+
+    .tile {
+      width: 150px;
+      background: white;
+      border: 4px solid #90caf9;
+      border-radius: 18px;
+      padding: 10px;
+      text-align: center;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+      animation: slide-in 0.4s ease-out;
+    }
+    .tile img { width: 100%; height: 120px; object-fit: contain; }
+    .tile .name { font-size: 1.2rem; font-weight: 800; color: #6a1b9a; }
+    .tile.match { border-color: #ffca28; background: #fffde7; }
+    .tile.done { opacity: 0.4; }
+    @keyframes slide-in {
+      from { transform: translateY(-40px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    button {
+      background: linear-gradient(135deg, #ab47bc, #7b1fa2);
+      color: white;
+      border: none;
+      border-radius: 50px;
+      padding: 16px 44px;
+      font-size: 1.5rem;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(123,31,162,0.35);
+      transition: transform 0.1s;
+      letter-spacing: 0.04em;
+    }
+    button:hover:not(:disabled) { transform: scale(1.06); }
+    button:disabled { opacity: 0.45; cursor: default; }
+
+    #win {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    #win.show { display: flex; }
+    #win h2 {
+      font-size: 3rem;
+      color: #e91e63;
+      text-shadow: 2px 2px 0 #fff;
+      animation: pop 0.5s ease-out;
+    }
+
+    .confetti {
+      position: fixed;
+      top: -12px;
+      border-radius: 3px;
+      animation: fall linear forwards;
+      z-index: 20;
+      pointer-events: none;
+    }
+    @keyframes fall {
+      to { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Zingo! ⚡</h1>
+  <div id="instructions">Press ZING! to get new ponies</div>
+
+  <div id="main">
+    <div id="card-wrap"></div>
+
+    <div id="dispenser">
+      <div id="tiles"></div>
+      <button id="zing-btn">ZING!</button>
+      <div id="win">
+        <h2>ZINGO! 🎉</h2>
+        <button id="again-btn">Play again</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const CHARACTERS = [
+      { img: '../tictactoe/images/twilight.png',   name: 'Twilight'   },
+      { img: '../tictactoe/images/luna.png',       name: 'Luna'       },
+      { img: '../tictactoe/images/celestia.png',   name: 'Celestia'   },
+      { img: '../tictactoe/images/applejack.png',  name: 'Applejack'  },
+      { img: '../tictactoe/images/sunset.png',     name: 'Sunset'     },
+      { img: '../tictactoe/images/starlight.png',  name: 'Starlight'  },
+      { img: '../tictactoe/images/trixie.png',     name: 'Trixie'     },
+      { img: '../tictactoe/images/fluttershy.png', name: 'Fluttershy' },
+      { img: '../tictactoe/images/rarity.png',     name: 'Rarity'     },
+      { img: '../tictactoe/images/cadance.png',    name: 'Cadance'    },
+    ];
+
+    const CONFETTI_COLORS = ['#ff6f61','#ffd200','#6dd5ed','#a8e063','#f7971e','#c471ed','#12c2e9'];
+    const ROWS = ['A', 'B', 'C'];
+
+    const cardWrap = document.getElementById('card-wrap');
+    const tilesEl = document.getElementById('tiles');
+    const zingBtn = document.getElementById('zing-btn');
+    const againBtn = document.getElementById('again-btn');
+    const winEl = document.getElementById('win');
+    const instructions = document.getElementById('instructions');
+
+    let card, covered, bag, shown;
+
+    function shuffle(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function newGame() {
+      card = shuffle(CHARACTERS).slice(0, 9);
+      covered = new Set();
+      bag = shuffle(CHARACTERS);
+      shown = [];
+      tilesEl.innerHTML = '';
+      winEl.classList.remove('show');
+      zingBtn.style.display = '';
+      zingBtn.disabled = false;
+      instructions.textContent = 'Press ZING! to get new ponies';
+      buildCard();
+    }
+
+    function buildCard() {
+      cardWrap.innerHTML = '<div class="label"></div>' +
+        [1, 2, 3].map(n => `<div class="label">${n}</div>`).join('');
+      card.forEach((c, i) => {
+        if (i % 3 === 0) cardWrap.insertAdjacentHTML('beforeend', `<div class="label">${ROWS[i / 3]}</div>`);
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.dataset.i = i;
+        cell.innerHTML = `<img src="${c.img}" alt="${c.name}">`;
+        cell.addEventListener('click', () => clickCell(i, cell));
+        cardWrap.appendChild(cell);
+      });
+    }
+
+    function pendingMatches() {
+      return shown.filter(t => {
+        const i = card.indexOf(t.char);
+        return i >= 0 && !covered.has(i);
+      });
+    }
+
+    function zing() {
+      shown = bag.splice(0, 2).map(char => ({ char, el: null }));
+      tilesEl.innerHTML = '';
+      shown.forEach(t => {
+        const el = document.createElement('div');
+        el.className = 'tile';
+        el.innerHTML = `<img src="${t.char.img}" alt=""><div class="name">${t.char.name}</div>`;
+        tilesEl.appendChild(el);
+        t.el = el;
+      });
+      updateState();
+    }
+
+    function updateState() {
+      const pending = pendingMatches();
+      shown.forEach(t => {
+        const i = card.indexOf(t.char);
+        const isMatch = i >= 0;
+        t.el.classList.toggle('match', isMatch && !covered.has(i));
+        t.el.classList.toggle('done', !isMatch || covered.has(i));
+      });
+
+      if (covered.size === 9) {
+        instructions.textContent = 'We filled the whole card!';
+        zingBtn.style.display = 'none';
+        winEl.classList.add('show');
+        spawnConfetti();
+        return;
+      }
+
+      if (pending.length) {
+        instructions.textContent = pending.length === 1
+          ? `Find ${pending[0].char.name} on the card!`
+          : 'Find both ponies on the card!';
+        zingBtn.disabled = true;
+      } else {
+        instructions.textContent = shown.some(t => card.includes(t.char))
+          ? 'Great job! Press ZING! again'
+          : 'No match this time. Press ZING! again';
+        zingBtn.disabled = false;
+      }
+    }
+
+    function clickCell(i, cell) {
+      if (covered.has(i)) return;
+      const hit = pendingMatches().find(t => card[i] === t.char);
+      if (!hit) {
+        cell.classList.remove('nope');
+        void cell.offsetWidth;
+        cell.classList.add('nope');
+        return;
+      }
+      covered.add(i);
+      cell.classList.add('covered');
+      spawnConfetti(15);
+      updateState();
+    }
+
+    function spawnConfetti(count = 60) {
+      for (let i = 0; i < count; i++) {
+        const el = document.createElement('div');
+        el.className = 'confetti';
+        el.style.left = Math.random() * 100 + 'vw';
+        el.style.background = CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)];
+        el.style.width = (8 + Math.random() * 10) + 'px';
+        el.style.height = el.style.width;
+        el.style.animationDuration = (1.5 + Math.random() * 2) + 's';
+        el.style.animationDelay = (Math.random() * 0.5) + 's';
+        document.body.appendChild(el);
+        el.addEventListener('animationend', () => el.remove());
+      }
+    }
+
+    zingBtn.addEventListener('click', zing);
+    againBtn.addEventListener('click', newGame);
+    newGame();
+  </script>
+</body>
+</html>
