@@ -245,6 +245,7 @@
     <button class="mode-btn active" data-mode="count">1️⃣ Counting</button>
     <button class="mode-btn" data-mode="add">➕ Adding</button>
     <button class="mode-btn" data-mode="sub">➖ Taking Away</button>
+    <button class="mode-btn" data-mode="mult">✖️ Multiplying</button>
   </div>
   <div id="scene"></div>
   <div id="question"></div>
@@ -299,6 +300,7 @@
       count: 'Count the Ponies! 🌟',
       add:   'Adding Ponies! ➕',
       sub:   'Ponies Fly Away! ➖',
+      mult:  'Multiplying Ponies! ✖️',
     };
 
     document.querySelectorAll('.mode-btn').forEach(btn => {
@@ -411,11 +413,32 @@
       return a - b;
     }
 
+    // Two equal groups (same character), "×" in the middle — same layout as addRound
+    function multRound() {
+      const n = rand(2, 5);
+      const charIdx = pickChar();
+      lastCharIdx = charIdx;
+      const char = CHARACTERS[charIdx];
+
+      const leftSlots  = SLOTS.filter(s => s.cx < 250);
+      const rightSlots = SLOTS.filter(s => s.cx > 400);
+      shuffle(leftSlots).slice(0, n).forEach((slot, i) => placePony(char, slot, i * 0.07));
+      shuffle(rightSlots).slice(0, n).forEach((slot, i) => placePony(char, slot, (n + i) * 0.07));
+
+      const sign = document.createElement('div');
+      sign.id = 'plus-sign';
+      sign.textContent = '×';
+      scene.appendChild(sign);
+
+      question.textContent = Math.random() < 0.5 ? `2 × ${n} = ?` : `${n} × 2 = ?`;
+      return n * 2;
+    }
+
     function newRound() {
       document.body.style.background = BG_GRADIENTS[rand(0, BG_GRADIENTS.length - 1)];
       scene.innerHTML = '';
 
-      const answer = mode === 'add' ? addRound() : mode === 'sub' ? subRound() : countRound();
+      const answer = mode === 'add' ? addRound() : mode === 'sub' ? subRound() : mode === 'mult' ? multRound() : countRound();
 
       const nums = buildChoices(answer);
       choices.innerHTML = '';
