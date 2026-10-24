@@ -413,9 +413,10 @@
       return a - b;
     }
 
-    // Two equal groups (same character), "×" in the middle — same layout as addRound
+    // Two equal groups (same character), "×" in the middle — same layout as addRound.
+    // leftSlots/rightSlots only hold 4 each (middle column is reserved for the sign), so cap at 4.
     function multRound() {
-      const n = rand(2, 5);
+      const n = rand(2, 4);
       const charIdx = pickChar();
       lastCharIdx = charIdx;
       const char = CHARACTERS[charIdx];
