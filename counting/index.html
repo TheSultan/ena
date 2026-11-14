@@ -70,12 +70,54 @@
       box-shadow: 0 8px 32px rgba(0,0,0,0.12);
       overflow: hidden;
       margin-bottom: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3%;
+    }
+
+    /* A flex-wrap crowd of ponies — used by counting and subtracting, and
+       as each half of an addition. No fixed slot count, so any number fits. */
+    .group {
+      display: flex;
+      flex-wrap: wrap;
+      align-content: center;
+      justify-content: center;
+      gap: 2%;
+      width: 100%;
+      height: 100%;
+    }
+
+    .eq-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      gap: 1%;
+    }
+
+    .eq-row .group { flex: 1 1 0; min-width: 0; }
+
+    .eq-sign {
+      flex: 0 0 auto;
+      font-size: 10.5cqw;
+      font-weight: 900;
+      color: #fff;
+      text-shadow: 2px 3px 0 rgba(0,0,0,0.18);
+      padding: 0 1%;
+    }
+
+    .pony-slot {
+      position: relative;
+      container-type: inline-size;
+      flex: 0 0 auto;
     }
 
     .pony {
-      position: absolute;
-      width: 12.857%;
-      aspect-ratio: 1;
+      display: block;
+      width: 100%;
+      height: 100%;
       object-fit: contain;
       animation: pop-in 0.3s cubic-bezier(.36,.07,.19,.97) both;
     }
@@ -97,7 +139,11 @@
 
     .gone-mark {
       position: absolute;
-      font-size: 6.9cqw;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 55cqw;
       font-weight: 900;
       color: #d32f2f;
       text-shadow: 0 0 6px rgba(255,255,255,0.8);
@@ -111,16 +157,21 @@
       to   { opacity: 1; transform: scale(1); }
     }
 
-    #plus-sign {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 10.3cqw;
-      font-weight: 900;
-      color: #fff;
-      text-shadow: 2px 3px 0 rgba(0,0,0,0.18);
-      pointer-events: none;
+    /* Multiplication shows an actual rows × cols array — the clearest way
+       to picture a times-table fact, and it scales to any grid size. */
+    .array-grid {
+      display: grid;
+      width: 92%;
+      height: 92%;
+      gap: 4%;
+    }
+
+    .array-grid .pony {
+      animation-fill-mode: both;
+      /* grid items default to min-height/width:auto, which lets a tall,
+         narrow grid (e.g. 5 rows × 2 cols) blow out past the fixed box */
+      min-width: 0;
+      min-height: 0;
     }
 
     /* Question */
@@ -284,17 +335,18 @@
     const choices   = document.getElementById('choices');
     const nextBtn   = document.getElementById('next-btn');
 
-    // 10 grid slots (5 cols × 2 rows), centers within 700×360 scene
-    const SLOTS = [];
-    for (let row = 0; row < 2; row++) {
-      for (let col = 0; col < 5; col++) {
-        SLOTS.push({ cx: 70 + col * 120, cy: 90 + row * 180 });
-      }
+    // How big (as % of scene width) a pony should be so this many of them
+    // still fit the fixed scene box without a rigid slot grid.
+    const SIZE_TIERS = [[3, 22], [6, 17], [9, 14], [12, 12], [16, 10], [20, 8.5], [25, 7.5]];
+    function ponySize(n) {
+      for (const [max, pct] of SIZE_TIERS) if (n <= max) return pct;
+      return SIZE_TIERS[SIZE_TIERS.length - 1][1];
     }
 
     let mode = 'count';
     let lastCount = -1;
     let lastCharIdx = -1;
+    let lastFact = '';
 
     const HEADINGS = {
       count: 'Count the Ponies! 🌟',
@@ -303,9 +355,17 @@
       mult:  'Multiplying Ponies! ✖️',
     };
 
+    const CHOICE_RANGE = {
+      count: [1, 10],
+      add:   [1, 14],
+      sub:   [0, 12],
+      mult:  [1, 30],
+    };
+
     document.querySelectorAll('.mode-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         mode = btn.dataset.mode;
+        lastFact = '';
         document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b === btn));
         document.querySelector('h1').textContent = HEADINGS[mode];
         newRound();
@@ -328,27 +388,31 @@
 
     function shuffle(arr) { return [...arr].sort(() => Math.random() - 0.5); }
 
-    function buildChoices(correct) {
+    // Wrong answers land near the real one so they're plausible, not just
+    // any number — but never equal to it, and never outside the valid range.
+    function buildChoices(correct, [min, max]) {
+      const lo = Math.max(min, correct - 8);
+      const hi = Math.min(max, correct + 8);
       const wrong = new Set();
       while (wrong.size < 2) {
-        const n = rand(1, 10);
+        const n = rand(lo, hi);
         if (n !== correct) wrong.add(n);
       }
       return shuffle([correct, ...wrong]);
     }
 
-    function placePony(char, slot, delay) {
+    function makeSlot(char, size, delay) {
+      const slot = document.createElement('div');
+      slot.className = 'pony-slot';
+      slot.style.width = size + '%';
+      slot.style.aspectRatio = '1';
       const img = document.createElement('img');
       img.src = char.img;
       img.alt = char.name;
       img.className = 'pony';
-      const x = slot.cx - 45 + rand(-22, 22);
-      const y = slot.cy - 45 + rand(-22, 22);
-      img.style.left = (x / 7) + '%';
-      img.style.top  = (y / 3.6) + '%';
       img.style.animationDelay = delay + 's';
-      scene.appendChild(img);
-      return { img, x, y };
+      slot.appendChild(img);
+      return slot;
     }
 
     function countRound() {
@@ -358,90 +422,113 @@
       lastCharIdx = charIdx;
       const char  = CHARACTERS[charIdx];
 
-      shuffle(SLOTS).slice(0, count).forEach((slot, i) => placePony(char, slot, i * 0.07));
+      const group = document.createElement('div');
+      group.className = 'group';
+      const size = ponySize(count);
+      for (let i = 0; i < count; i++) group.appendChild(makeSlot(char, size, i * 0.06));
+      scene.appendChild(group);
 
       const plural = count === 1 ? char.name : char.name + 's';
       question.textContent = `How many ${plural}?`;
       return count;
     }
 
-    // Left group in columns 0–1, right group in columns 3–4, "+" in the middle
     function addRound() {
-      const a = rand(1, 4);
-      const b = rand(1, 4);
+      let a, b;
+      do { a = rand(1, 6); b = rand(1, 6); } while (`${a}+${b}` === lastFact);
+      lastFact = `${a}+${b}`;
+
       const idxA = pickChar();
       let idxB;
       do { idxB = rand(0, CHARACTERS.length - 1); } while (idxB === idxA);
       lastCharIdx = idxA;
 
-      const leftSlots  = SLOTS.filter(s => s.cx < 250);
-      const rightSlots = SLOTS.filter(s => s.cx > 400);
-      shuffle(leftSlots).slice(0, a).forEach((slot, i) => placePony(CHARACTERS[idxA], slot, i * 0.07));
-      shuffle(rightSlots).slice(0, b).forEach((slot, i) => placePony(CHARACTERS[idxB], slot, (a + i) * 0.07));
+      const row = document.createElement('div');
+      row.className = 'eq-row';
+      const left = document.createElement('div');
+      left.className = 'group';
+      const right = document.createElement('div');
+      right.className = 'group';
+      const size = ponySize(a + b);
+      for (let i = 0; i < a; i++) left.appendChild(makeSlot(CHARACTERS[idxA], size, i * 0.06));
+      for (let i = 0; i < b; i++) right.appendChild(makeSlot(CHARACTERS[idxB], size, (a + i) * 0.06));
 
-      const plus = document.createElement('div');
-      plus.id = 'plus-sign';
-      plus.textContent = '+';
-      scene.appendChild(plus);
+      const sign = document.createElement('div');
+      sign.className = 'eq-sign';
+      sign.textContent = '+';
+
+      row.append(left, sign, right);
+      scene.appendChild(row);
 
       question.textContent = `${a} + ${b} = ?`;
       return a + b;
     }
 
     function subRound() {
-      const a = rand(2, 8);
-      const b = rand(1, a - 1);
+      let a, b;
+      do { a = rand(3, 12); b = rand(1, a - 1); } while (`${a}-${b}` === lastFact);
+      lastFact = `${a}-${b}`;
+
       const charIdx = pickChar();
       lastCharIdx = charIdx;
       const char = CHARACTERS[charIdx];
 
-      const slots = shuffle(SLOTS).slice(0, a);
-      slots.forEach((slot, i) => {
-        const { img, x, y } = placePony(char, slot, i * 0.07);
+      const group = document.createElement('div');
+      group.className = 'group';
+      const size = ponySize(a);
+      for (let i = 0; i < a; i++) {
+        const slot = makeSlot(char, size, i * 0.06);
         if (i >= a - b) {
-          img.classList.add('gone');
+          slot.querySelector('.pony').classList.add('gone');
           const mark = document.createElement('div');
           mark.className = 'gone-mark';
           mark.textContent = '✖';
-          mark.style.left = ((x + 26) / 7) + '%';
-          mark.style.top  = ((y + 16) / 3.6) + '%';
-          scene.appendChild(mark);
+          slot.appendChild(mark);
         }
-      });
+        group.appendChild(slot);
+      }
+      scene.appendChild(group);
 
       question.textContent = `${a} − ${b} = ?`;
       return a - b;
     }
 
-    // Two equal groups (same character), "×" in the middle — same layout as addRound.
-    // leftSlots/rightSlots only hold 4 each (middle column is reserved for the sign), so cap at 4.
     function multRound() {
-      const n = rand(2, 4);
+      let rows, cols;
+      do { rows = rand(2, 5); cols = rand(2, 5); } while (`${rows}x${cols}` === lastFact);
+      lastFact = `${rows}x${cols}`;
+
       const charIdx = pickChar();
       lastCharIdx = charIdx;
       const char = CHARACTERS[charIdx];
 
-      const leftSlots  = SLOTS.filter(s => s.cx < 250);
-      const rightSlots = SLOTS.filter(s => s.cx > 400);
-      shuffle(leftSlots).slice(0, n).forEach((slot, i) => placePony(char, slot, i * 0.07));
-      shuffle(rightSlots).slice(0, n).forEach((slot, i) => placePony(char, slot, (n + i) * 0.07));
+      const grid = document.createElement('div');
+      grid.className = 'array-grid';
+      grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+      grid.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+      for (let i = 0; i < rows * cols; i++) {
+        const img = document.createElement('img');
+        img.src = char.img;
+        img.alt = char.name;
+        img.className = 'pony';
+        img.style.animationDelay = (i * 0.04) + 's';
+        grid.appendChild(img);
+      }
+      scene.appendChild(grid);
 
-      const sign = document.createElement('div');
-      sign.id = 'plus-sign';
-      sign.textContent = '×';
-      scene.appendChild(sign);
-
-      question.textContent = Math.random() < 0.5 ? `2 × ${n} = ?` : `${n} × 2 = ?`;
-      return n * 2;
+      question.textContent = `${rows} × ${cols} = ?`;
+      return rows * cols;
     }
+
+    const ROUND_FN = { count: countRound, add: addRound, sub: subRound, mult: multRound };
 
     function newRound() {
       document.body.style.background = BG_GRADIENTS[rand(0, BG_GRADIENTS.length - 1)];
       scene.innerHTML = '';
 
-      const answer = mode === 'add' ? addRound() : mode === 'sub' ? subRound() : mode === 'mult' ? multRound() : countRound();
+      const answer = ROUND_FN[mode]();
 
-      const nums = buildChoices(answer);
+      const nums = buildChoices(answer, CHOICE_RANGE[mode]);
       choices.innerHTML = '';
       const LABELS = ['A', 'B', 'C'];
       nums.forEach((n, i) => {
