@@ -16,6 +16,7 @@ spinner/            ← Spin-the-wheel random character picker
 stickers/           ← Drag-and-drop sticker scene builder
 storybook/          ← 7-page illustrated story ("A Magical Day in Ponyville")
 zingo/              ← Zingo: cooperative bingo, fill a 3×3 card from two-tile pulls
+tests/              ← headless test suite covering the homepage and every game
 ```
 
 ## Shared Assets
@@ -48,6 +49,23 @@ Every game and the homepage must work at phone width (~375px) as well as desktop
 - Add a `@media (max-width: 600px)` block that shrinks headings, padding, gaps, and labels
 - Keep the A/B/C and row/column labels visible on mobile
 - Headless Chrome won't go below ~500px wide, so test by loading the page in a 375px iframe (see the verify skill)
+
+## Tests
+
+`tests/index.html` is a single self-contained page (no build step, no npm — same ethos as the games) that iframes the homepage and every game and asserts their core logic: win/match detection, answer correctness, button state, confetti, and (for counting) that no fact repeats back-to-back and no multiplication array overflows its box.
+
+Run it headlessly after any change to game logic:
+
+```bash
+CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+"$CHROME" --headless=new --disable-gpu --allow-file-access-from-files \
+  --window-size=1300,2400 --virtual-time-budget=30000 \
+  --dump-dom "file:///path/to/tests/index.html" | grep -o '<title>.*</title>'
+```
+
+The page title doubles as the summary (e.g. `Tests: 70/70 passed`); the full report with per-check detail is in the dumped `#report` div. It can also just be opened in a real browser to watch it run and read the pass/fail list.
+
+A game whose win/round logic involves `requestAnimationFrame` (like the spinner) needs its `requestAnimationFrame` shimmed to a `setTimeout` inside the test, since headless virtual time reliably fast-forwards timers but not real compositor frames.
 
 ## Deployment
 

@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Ena Games — Tests</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; background: #f3f0fa; color: #2a2135; }
+  h1 { color: #7b1fa2; }
+  h2 { color: #5a3e2b; margin: 24px 0 6px; font-size: 1.1rem; }
+  #summary { font-size: 1.3rem; font-weight: 800; padding: 10px 16px; border-radius: 10px; display: inline-block; margin-bottom: 10px; }
+  #summary.pass { background: #c8e6c9; color: #1b5e20; }
+  #summary.fail { background: #ffcdd2; color: #b71c1c; }
+  #summary.running { background: #eee; color: #555; }
+  .line { font-family: 'SF Mono', Menlo, monospace; font-size: 0.85rem; padding: 2px 0; white-space: pre-wrap; }
+  .line.ok { color: #1b5e20; }
+  .line.bad { color: #b71c1c; font-weight: 700; }
+  #frames { position: fixed; top: 0; left: -9999px; }
+  #frames iframe { width: 1000px; height: 760px; border: 0; }
+</style>
+</head>
+<body>
+
+<h1>Ena Games — Test Suite</h1>
+<div id="summary" class="running">Running…</div>
+<div id="report"></div>
+<div id="frames"></div>
+
+<script>
+// Off-screen but still laid out (not display:none) — games need real
+// layout for getBoundingClientRect() checks (e.g. the grid-overflow test).
+const framesHost = document.getElementById('frames');
+const report = document.getElementById('report');
+const summary = document.getElementById('summary');
+const results = [];
+
+function check(game, label, cond, detail) {
+  results.push({ game, label, pass: !!cond, detail: detail || '' });
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function loadIframe(src) {
+  return new Promise((resolve, reject) => {
+    const f = document.createElement('iframe');
+    f.src = src;
+    f.onload = () => resolve(f);
+    f.onerror = () => reject(new Error('failed to load ' + src));
+    framesHost.appendChild(f);
+  });
+}
+
+function confettiCount(doc) { return doc.querySelectorAll('.confetti').length; }
+
+function render() {
+  const byGame = {};
+  results.forEach(r => (byGame[r.game] = byGame[r.game] || []).push(r));
+
+  report.innerHTML = '';
+  for (const game in byGame) {
+    const h = document.createElement('h2');
+    h.textContent = game;
+    report.appendChild(h);
+    byGame[game].forEach(r => {
+      const line = document.createElement('div');
+      line.className = 'line ' + (r.pass ? 'ok' : 'bad');
+      line.textContent = (r.pass ? '✅ ' : '❌ ') + r.label + (r.pass ? '' : (r.detail ? '  — ' + r.detail : ''));
+      report.appendChild(line);
+    });
+  }
+
+  const total = results.length;
+  const failed = results.filter(r => !r.pass).length;
+  summary.className = failed ? 'fail' : 'pass';
+  summary.textContent = `${total - failed} / ${total} passed` + (failed ? ` — ${failed} FAILED` : '');
+  document.title = `Tests: ${total - failed}/${total} passed` + (failed ? ` (${failed} failed)` : '');
+}
+
+// ---------------------------------------------------------------- Homepage
+
+async function testHomepage() {
+  const f = await loadIframe('../index.html');
+  const doc = f.contentDocument;
+  const cards = [...doc.querySelectorAll('.game-card')];
+  check('Homepage', 'has 7 game cards', cards.length === 7, `found ${cards.length}`);
+
+  ['tictactoe', 'memory', 'counting', 'spinner', 'stickers', 'storybook', 'zingo'].forEach(name => {
+    const href = `${name}/index.html`;
+    check('Homepage', `links to ${name}`, cards.some(c => c.getAttribute('href') === href));
+  });
+}
+
+// ---------------------------------------------------------------- Tic Tac Toe
+
+async function testTicTacToe() {
+  const f = await loadIframe('../tictactoe/index.html');
+  const doc = f.contentDocument;
+  const cells = () => [...doc.querySelectorAll('.cell')];
+  const banner = () => doc.getElementById('turn-banner').textContent;
+  const click = i => cells()[i].click();
+
+  check('Tic Tac Toe', 'starts with 9 empty cells', cells().length === 9 && cells().every(c => !c.classList.contains('taken')));
+  check('Tic Tac Toe', "Ena goes first", banner().includes("Ena's Turn"));
+
+  click(0);
+  check('Tic Tac Toe', 'a click places a symbol and marks the cell taken', cells()[0].classList.contains('taken'));
+  check('Tic Tac Toe', 'turn passes to Dad', banner().includes("Dad's Turn"));
+
+  const before = cells()[0].innerHTML;
+  click(0);
+  check('Tic Tac Toe', 'clicking a taken cell does nothing', cells()[0].innerHTML === before && banner().includes("Dad's Turn"));
+
+  // Ena takes 0,1,2 (+6,7); Dad takes 3,4,5 (+8) — completes both lines on
+  // Dad's 3rd move, before the board is full, triggering the shared win.
+  [0, 3, 1, 4, 2, 5].forEach(click);
+  const overlay = doc.getElementById('overlay');
+  check('Tic Tac Toe', 'two simultaneous lines trigger the shared-win overlay',
+    overlay.classList.contains('show') && doc.getElementById('overlay-message').textContent.includes('together'));
+  check('Tic Tac Toe', 'winning lines are highlighted', [0, 1, 2, 3, 4, 5].every(i => cells()[i].classList.contains('winner')));
+  check('Tic Tac Toe', 'confetti spawns on a shared win', confettiCount(doc) > 0);
+
+  doc.getElementById('play-again').click();
+  check('Tic Tac Toe', 'Play Again clears the board and overlay',
+    !overlay.classList.contains('show') && cells().every(c => !c.classList.contains('taken')) && banner().includes("Ena's Turn"));
+
+  // Picking the same symbol as the other player swaps them and resets the game.
+  click(0);
+  const dadTwilightBtn = [...doc.querySelectorAll('#dad-symbols .symbol-btn')].find(b => b.textContent.includes('Twilight'));
+  dadTwilightBtn.click();
+  check('Tic Tac Toe', 'picking a taken symbol swaps it with the other player',
+    doc.getElementById('title').textContent.includes('Applejack') && cells().every(c => !c.classList.contains('taken')));
+}
+
+// ---------------------------------------------------------------- Memory
+
+async function testMemory() {
+  const f = await loadIframe('../memory/index.html');
+  const doc = f.contentDocument;
+  const cards = () => [...doc.querySelectorAll('.card')];
+  const nameOf = c => c.querySelector('.card-front img').alt;
+
+  check('Memory', 'board has 20 cards (10 pairs)', cards().length === 20);
+  check('Memory', 'A–D / 1–5 labels present', doc.querySelectorAll('.board-label').length === 10);
+
+  // Find a matching pair and two cards of different (and different-from-the-
+  // pair) names for the mismatch test, straight from the dealt (random) board.
+  const byName = {};
+  cards().forEach((c, i) => (byName[nameOf(c)] = byName[nameOf(c)] || []).push(i));
+  const names = Object.keys(byName);
+  const pairIdx = byName[names[0]];
+  const mismA = byName[names[1]][0];
+  const mismB = byName[names[2]][0];
+
+  cards()[pairIdx[0]].click();
+  check('Memory', 'clicking a card flips it', cards()[pairIdx[0]].classList.contains('flipped'));
+  cards()[pairIdx[1]].click();
+  check('Memory', 'a matching pair gets marked matched',
+    cards()[pairIdx[0]].classList.contains('matched') && cards()[pairIdx[1]].classList.contains('matched'));
+  check('Memory', 'pairs counter increments', doc.getElementById('pairs').textContent === '1');
+
+  cards()[mismA].click();
+  cards()[mismB].click();
+  check('Memory', 'a mismatched pair shakes', cards()[mismA].classList.contains('shake') && cards()[mismB].classList.contains('shake'));
+  const thirdCard = cards().find((c, i) => i !== mismA && i !== mismB && !pairIdx.includes(i));
+  thirdCard.click();
+  check('Memory', 'board is locked while a mismatch resolves', !thirdCard.classList.contains('flipped'));
+  await sleep(1000);
+  check('Memory', 'mismatched cards flip back face-down',
+    !cards()[mismA].classList.contains('flipped') && !cards()[mismB].classList.contains('flipped'));
+
+  // Clear the rest of the board by matching every remaining pair.
+  const remainingByName = {};
+  cards().forEach((c, i) => {
+    if (!c.classList.contains('matched')) (remainingByName[nameOf(c)] = remainingByName[nameOf(c)] || []).push(i);
+  });
+  for (const name in remainingByName) {
+    const [a, b] = remainingByName[name];
+    cards()[a].click();
+    cards()[b].click();
+  }
+  await sleep(500);
+  const overlay = doc.getElementById('overlay');
+  check('Memory', 'finding all 10 pairs shows the win overlay', overlay.classList.contains('show'));
+  check('Memory', 'confetti spawns on winning', confettiCount(doc) > 0);
+
+  doc.getElementById('play-again').click();
+  check('Memory', 'Play Again deals a fresh board', !overlay.classList.contains('show') && doc.getElementById('pairs').textContent === '0');
+}
+
+// ---------------------------------------------------------------- Counting
+
+async function testCounting() {
+  const f = await loadIframe('../counting/index.html');
+  const doc = f.contentDocument;
+  const scene = () => doc.getElementById('scene');
+  const setMode = m => doc.querySelector(`[data-mode="${m}"]`).click();
+  const correctValue = () => {
+    doc.querySelectorAll('.choice-btn')[0].click();
+    const btn = [...doc.querySelectorAll('.choice-btn')].find(b => b.classList.contains('correct'));
+    return btn ? Number(btn.dataset.value) : NaN;
+  };
+
+  // Counting: number of ponies on screen must equal the marked-correct answer.
+  const ponyCount = scene().querySelectorAll('.pony-slot').length;
+  check('Counting', 'counting mode shows 1-10 ponies', ponyCount >= 1 && ponyCount <= 10);
+  check('Counting', 'the correct answer matches the number of ponies on screen', correctValue() === ponyCount);
+
+  // Adding: two groups either side of "+", sizes must match the question and the answer.
+  setMode('add');
+  let m = doc.getElementById('question').textContent.match(/(\d+)\D+(\d+)\s*=\s*\?/);
+  let groups = scene().querySelectorAll('.eq-row .group');
+  check('Counting', 'adding shows two groups beside a "+"', groups.length === 2 && scene().querySelector('.eq-sign').textContent === '+');
+  check('Counting', 'group sizes match the addends in the question',
+    groups[0].querySelectorAll('.pony-slot').length === Number(m[1]) && groups[1].querySelectorAll('.pony-slot').length === Number(m[2]));
+  check('Counting', 'the correct answer is the sum', correctValue() === Number(m[1]) + Number(m[2]));
+
+  // Subtracting: `a` ponies shown, `b` of them crossed out, answer is a-b.
+  setMode('sub');
+  m = doc.getElementById('question').textContent.match(/(\d+)\D+(\d+)\s*=\s*\?/);
+  const [a, b] = [Number(m[1]), Number(m[2])];
+  check('Counting', 'subtracting shows `a` ponies with `b` crossed out',
+    scene().querySelectorAll('.pony-slot').length === a && scene().querySelectorAll('.pony.gone').length === b);
+  check('Counting', 'the correct answer is a minus b', correctValue() === a - b);
+
+  // Multiplying: an actual rows x cols array — the point of this whole fix.
+  setMode('mult');
+  m = doc.getElementById('question').textContent.match(/(\d+)\D+(\d+)\s*=\s*\?/);
+  const [rows, cols] = [Number(m[1]), Number(m[2])];
+  check('Counting', 'multiplying rows/cols range 2-5 (not always ×2)', rows >= 2 && rows <= 5 && cols >= 2 && cols <= 5);
+  check('Counting', 'the array has rows × cols ponies', scene().querySelector('.array-grid').children.length === rows * cols);
+  check('Counting', 'the correct answer is rows times cols', correctValue() === rows * cols);
+
+  // Run several more multiplication rounds: no immediate repeats, and no
+  // grid overflow (regression check for the min-height:0 fix).
+  const seen = [];
+  let overflowed = false;
+  for (let i = 0; i < 8; i++) {
+    doc.getElementById('next-btn').click();
+    const mm = doc.getElementById('question').textContent.match(/(\d+)\D+(\d+)\s*=\s*\?/);
+    const key = mm[1] + 'x' + mm[2];
+    seen.push(key);
+    const gridRect = scene().querySelector('.array-grid').getBoundingClientRect();
+    const sceneRect = scene().getBoundingClientRect();
+    if (gridRect.bottom > sceneRect.bottom + 2 || gridRect.right > sceneRect.right + 2) overflowed = true;
+  }
+  check('Counting', 'no two consecutive multiplication rounds repeat the same fact',
+    seen.every((k, i) => i === 0 || k !== seen[i - 1]));
+  check('Counting', 'multiplication arrays never overflow their box', !overflowed);
+}
+
+// ---------------------------------------------------------------- Spinner
+
+const SPINNER_NAMES = ['Twilight', 'Luna', 'Celestia', 'Applejack', 'Sunset', 'Starlight', 'Trixie', 'Fluttershy', 'Rarity', 'Cadance'];
+
+async function testSpinner() {
+  const f = await loadIframe('../spinner/index.html');
+  const doc = f.contentDocument;
+  const win = f.contentWindow;
+
+  // Headless virtual time reliably fast-forwards setTimeout, but the spin
+  // loop runs on requestAnimationFrame, which needs real compositor frames
+  // that a dump-dom/screenshot run doesn't pump — so drive it off a timer.
+  win.requestAnimationFrame = cb => win.setTimeout(() => cb(win.performance.now()), 16);
+
+  check('Spinner', 'result is hidden before spinning', doc.getElementById('result').classList.contains('hidden'));
+
+  doc.getElementById('spin-btn').click();
+  check('Spinner', 'the spin button disables itself while spinning', doc.getElementById('spin-btn').disabled);
+
+  await sleep(5000);
+  check('Spinner', 'the spin button re-enables after spinning', !doc.getElementById('spin-btn').disabled);
+  check('Spinner', 'a result is revealed', !doc.getElementById('result').classList.contains('hidden'));
+
+  const resultText = doc.getElementById('result-text').textContent;
+  check('Spinner', 'the result is one of the 10 characters', SPINNER_NAMES.some(n => resultText.startsWith(n)));
+  check('Spinner', 'confetti spawns on landing', confettiCount(doc) > 0);
+}
+
+// ---------------------------------------------------------------- Stickers
+
+async function testStickers() {
+  const f = await loadIframe('../stickers/index.html');
+  const doc = f.contentDocument;
+  const scene = doc.getElementById('scene');
+  const placed = () => scene.querySelectorAll('.placed');
+
+  const stickerBtns = () => [...doc.querySelectorAll('.sticker-btn')];
+  check('Stickers', 'palette has all 10 characters', stickerBtns().length === 10);
+
+  stickerBtns()[0].click();
+  check('Stickers', 'selecting a sticker marks it active', stickerBtns()[0].classList.contains('active'));
+  check('Stickers', 'the hint updates to the selected character', doc.getElementById('hint').textContent.includes('selected'));
+
+  scene.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: 100, clientY: 100 }));
+  check('Stickers', 'clicking the scene places a sticker', placed().length === 1);
+  const expectedPct = (80 / 680 * 100);
+  check('Stickers', 'a placed sticker is sized to the Small preset',
+    Math.abs(parseFloat(placed()[0].style.width) - expectedPct) < 0.5);
+
+  doc.querySelector('.size-btn[data-size="150"]').click();
+  scene.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: 200, clientY: 150 }));
+  check('Stickers', 'switching size affects newly placed stickers',
+    placed().length === 2 && Math.abs(parseFloat(placed()[1].style.width) - (150 / 680 * 100)) < 0.5);
+
+  const countBefore = placed().length;
+  placed()[0].click();
+  check('Stickers', 'clicking a placed sticker removes it (and does not place a new one)', placed().length === countBefore - 1);
+
+  doc.getElementById('clear-btn').click();
+  check('Stickers', 'Clear all removes every sticker', placed().length === 0);
+}
+
+// ---------------------------------------------------------------- Storybook
+
+async function testStorybook() {
+  const f = await loadIframe('../storybook/index.html');
+  const doc = f.contentDocument;
+  const next = () => doc.getElementById('next-btn').click();
+  const prev = () => doc.getElementById('prev-btn').click();
+  const pageNum = () => doc.getElementById('page-num').textContent;
+
+  check('Storybook', 'starts on the title page with Back disabled', pageNum() === '' && doc.getElementById('prev-btn').disabled);
+
+  next();
+  check('Storybook', 'Next advances to page 1', pageNum() === 'Page 1 of 6');
+  check('Storybook', 'Back is enabled after leaving the title page', !doc.getElementById('prev-btn').disabled);
+
+  prev();
+  check('Storybook', 'Back returns to the title page', pageNum() === '' && doc.getElementById('prev-btn').disabled);
+
+  for (let i = 0; i < 6; i++) next();
+  check('Storybook', 'reaching the last page offers "Read Again"', doc.getElementById('next-btn').textContent.includes('Read Again'));
+  check('Storybook', 'confetti celebrates the ending', confettiCount(doc) > 0);
+
+  next();
+  check('Storybook', '"Read Again" wraps back to the title page', pageNum() === '' && doc.getElementById('prev-btn').disabled);
+}
+
+// ---------------------------------------------------------------- Zingo
+
+async function testZingo() {
+  const f = await loadIframe('../zingo/index.html');
+  const doc = f.contentDocument;
+  const cellFor = name => [...doc.querySelectorAll('#card-wrap .cell')].find(c => c.querySelector('img').alt === name && !c.classList.contains('covered'));
+  const tileNames = () => [...doc.querySelectorAll('#tiles .tile .name')].map(e => e.textContent);
+  const covered = () => doc.querySelectorAll('#card-wrap .cell.covered').length;
+
+  check('Zingo', 'card has 9 cells with A-C / 1-3 labels', doc.querySelectorAll('#card-wrap .cell').length === 9 && doc.querySelectorAll('#card-wrap .label').length === 7);
+  check('Zingo', 'ZING! is enabled before any pull', !doc.getElementById('zing-btn').disabled);
+
+  doc.getElementById('zing-btn').click();
+  check('Zingo', 'ZING! deals two tiles', doc.querySelectorAll('#tiles .tile').length === 2);
+
+  // Click a cell that can't match either shown tile — should shake, not cover.
+  const wrongCell = [...doc.querySelectorAll('#card-wrap .cell')].find(c => !tileNames().includes(c.querySelector('img').alt));
+  if (wrongCell) {
+    wrongCell.click();
+    check('Zingo', "clicking a non-matching cell shakes it, doesn't cover it", wrongCell.classList.contains('nope') && !wrongCell.classList.contains('covered'));
+  }
+
+  // The bag holds all 10 characters with no replacement, drained 2 at a time;
+  // the card holds 9 of those 10, so covering every match across exactly 5
+  // ZINGs is guaranteed to fill the card — a deterministic win, not luck.
+  for (let round = 0; round < 5; round++) {
+    if (round > 0) doc.getElementById('zing-btn').click();
+    tileNames().forEach(name => {
+      const cell = cellFor(name);
+      if (cell) cell.click();
+    });
+  }
+  check('Zingo', 'covering every match across the whole bag fills the card', covered() === 9);
+  check('Zingo', 'filling the card shows the win state', doc.getElementById('win').classList.contains('show') && doc.getElementById('zing-btn').style.display === 'none');
+  check('Zingo', 'confetti spawns along the way', confettiCount(doc) > 0);
+
+  doc.getElementById('again-btn').click();
+  check('Zingo', 'Play again deals a fresh card', covered() === 0 && !doc.getElementById('win').classList.contains('show') && doc.getElementById('zing-btn').style.display !== 'none');
+}
+
+// ---------------------------------------------------------------- Run everything
+
+async function main() {
+  const suite = [
+    ['Homepage', testHomepage],
+    ['Tic Tac Toe', testTicTacToe],
+    ['Memory', testMemory],
+    ['Counting', testCounting],
+    ['Spinner', testSpinner],
+    ['Stickers', testStickers],
+    ['Storybook', testStorybook],
+    ['Zingo', testZingo],
+  ];
+  for (const [name, fn] of suite) {
+    try {
+      await fn();
+    } catch (e) {
+      check(name, 'test crashed without finishing', false, String((e && e.stack) || e));
+    }
+    render();
+  }
+}
+
+main();
+</script>
+</body>
+</html>
